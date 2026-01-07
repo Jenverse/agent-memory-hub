@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Database, Save, Plus, Clock, Brain, Settings, AlertCircle } from "lucide-react";
+import { ArrowLeft, Database, Save, Plus, Clock, Brain, Settings, AlertCircle, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SchemaBuilder from "@/components/SchemaBuilder";
 import MemoryPolicyCard from "@/components/MemoryPolicyCard";
 import MemoryBucketCard from "@/components/MemoryBucketCard";
+import AgentContextBuilder from "@/components/AgentContextBuilder";
 
 interface SchemaField {
   id: string;
@@ -28,6 +29,19 @@ interface MemoryBucket {
   name: string;
   description: string;
   schema: SchemaField[];
+}
+
+interface ExampleMemory {
+  id: string;
+  userMessage: string;
+  extractedMemory: string;
+  memoryType: "preference" | "fact" | "custom";
+}
+
+interface AgentContextData {
+  purpose: string;
+  goals: string[];
+  exampleMemories: ExampleMemory[];
 }
 
 const ServiceConfig = () => {
@@ -77,6 +91,24 @@ const ServiceConfig = () => {
     { id: "dr-1", type: "delete", condition: "User explicitly requests to forget information (e.g., 'Forget that I said...')", enabled: true },
     { id: "dr-2", type: "delete", condition: "Information becomes stale after 90 days without access", enabled: false },
   ]);
+
+  // Agent context for extraction guidance
+  const [agentContext, setAgentContext] = useState<AgentContextData>({
+    purpose: "",
+    goals: [
+      "Remember user's personal preferences and lifestyle details",
+      "Track important facts the user shares about themselves",
+      "Note patterns in user behavior and communication style",
+    ],
+    exampleMemories: [
+      {
+        id: "ex-1",
+        userMessage: "I have 2 kids and we usually travel during summer break",
+        extractedMemory: "User has 2 children; prefers summer travel for family trips",
+        memoryType: "fact",
+      },
+    ],
+  });
 
   const addCustomBucket = () => {
     const newBucket: MemoryBucket = {
@@ -132,8 +164,12 @@ const ServiceConfig = () => {
           </div>
 
           {/* Configuration Tabs */}
-          <Tabs defaultValue="short-term" className="space-y-6">
+          <Tabs defaultValue="agent-context" className="space-y-6">
             <TabsList className="glass-card p-1 w-full justify-start overflow-x-auto">
+              <TabsTrigger value="agent-context" className="gap-2 data-[state=active]:bg-primary/20">
+                <Sparkles className="h-4 w-4" />
+                Agent Context
+              </TabsTrigger>
               <TabsTrigger value="short-term" className="gap-2 data-[state=active]:bg-primary/20">
                 <Clock className="h-4 w-4" />
                 Short-Term Memory
@@ -147,6 +183,11 @@ const ServiceConfig = () => {
                 Memory Policies
               </TabsTrigger>
             </TabsList>
+
+            {/* Agent Context Tab */}
+            <TabsContent value="agent-context" className="space-y-6 animate-fade-in">
+              <AgentContextBuilder data={agentContext} onChange={setAgentContext} />
+            </TabsContent>
 
             {/* Short-Term Memory Tab */}
             <TabsContent value="short-term" className="space-y-6 animate-fade-in">
