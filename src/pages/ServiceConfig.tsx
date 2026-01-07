@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Database, Save, Plus, Clock, Brain, Settings, AlertCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Database, Save, Plus, Clock, Brain, AlertCircle, Sparkles } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SchemaBuilder from "@/components/SchemaBuilder";
-import MemoryPolicyCard from "@/components/MemoryPolicyCard";
 import MemoryBucketCard from "@/components/MemoryBucketCard";
 import AgentContextBuilder from "@/components/AgentContextBuilder";
 
@@ -15,13 +13,6 @@ interface SchemaField {
   name: string;
   type: "string" | "number" | "boolean" | "array" | "object";
   required: boolean;
-}
-
-interface PolicyRule {
-  id: string;
-  type: "store" | "delete" | "edit";
-  condition: string;
-  enabled: boolean;
 }
 
 interface MemoryBucket {
@@ -76,21 +67,6 @@ const ServiceConfig = () => {
 
   // Custom memory buckets
   const [customBuckets, setCustomBuckets] = useState<MemoryBucket[]>([]);
-
-  // Memory policies
-  const [storeRules, setStoreRules] = useState<PolicyRule[]>([
-    { id: "sr-1", type: "store", condition: "User explicitly states a personal preference (e.g., 'I prefer...', 'I like...')", enabled: true },
-    { id: "sr-2", type: "store", condition: "User shares a factual statement about themselves (e.g., name, job, location)", enabled: true },
-  ]);
-
-  const [editRules, setEditRules] = useState<PolicyRule[]>([
-    { id: "er-1", type: "edit", condition: "User corrects previously stored information (e.g., 'Actually, my name is...')", enabled: true },
-  ]);
-
-  const [deleteRules, setDeleteRules] = useState<PolicyRule[]>([
-    { id: "dr-1", type: "delete", condition: "User explicitly requests to forget information (e.g., 'Forget that I said...')", enabled: true },
-    { id: "dr-2", type: "delete", condition: "Information becomes stale after 90 days without access", enabled: false },
-  ]);
 
   // Agent context for extraction guidance
   const [agentContext, setAgentContext] = useState<AgentContextData>({
@@ -177,10 +153,6 @@ const ServiceConfig = () => {
               <TabsTrigger value="long-term" className="gap-2 data-[state=active]:bg-primary/20">
                 <Brain className="h-4 w-4" />
                 Long-Term Memory
-              </TabsTrigger>
-              <TabsTrigger value="policies" className="gap-2 data-[state=active]:bg-primary/20">
-                <Settings className="h-4 w-4" />
-                Memory Policies
               </TabsTrigger>
             </TabsList>
 
@@ -306,40 +278,6 @@ const ServiceConfig = () => {
               </div>
             </TabsContent>
 
-            {/* Memory Policies Tab */}
-            <TabsContent value="policies" className="space-y-6 animate-fade-in">
-              <div className="glass-card rounded-xl p-6 mb-6">
-                <h2 className="font-semibold text-lg mb-2">Memory Policies</h2>
-                <p className="text-sm text-muted-foreground">
-                  Define the rules that govern when your agent stores, edits, or deletes information 
-                  in long-term memory. These policies help your agent make intelligent decisions about 
-                  what to remember.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <MemoryPolicyCard
-                  title="Storage Rules"
-                  description="When should the agent store new information?"
-                  rules={storeRules}
-                  onChange={setStoreRules}
-                />
-
-                <MemoryPolicyCard
-                  title="Edit Rules"
-                  description="When should the agent update existing memories?"
-                  rules={editRules}
-                  onChange={setEditRules}
-                />
-
-                <MemoryPolicyCard
-                  title="Deletion Rules"
-                  description="When should the agent remove stored information?"
-                  rules={deleteRules}
-                  onChange={setDeleteRules}
-                />
-              </div>
-            </TabsContent>
           </Tabs>
         </div>
       </main>
