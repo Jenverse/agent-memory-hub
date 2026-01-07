@@ -27,6 +27,7 @@ interface ExampleMemory {
   userMessage: string;
   extractedMemory: string;
   memoryType: "preference" | "fact" | "custom";
+  action: "store" | "update" | "delete";
 }
 
 interface AgentContextData {
@@ -82,6 +83,21 @@ const ServiceConfig = () => {
         userMessage: "I have 2 kids and we usually travel during summer break",
         extractedMemory: "User has 2 children; prefers summer travel for family trips",
         memoryType: "fact",
+        action: "store",
+      },
+      {
+        id: "ex-2",
+        userMessage: "Actually, I have 3 kids now, we just had a baby",
+        extractedMemory: "Update: User now has 3 children (was 2)",
+        memoryType: "fact",
+        action: "update",
+      },
+      {
+        id: "ex-3",
+        userMessage: "Please forget that I mentioned my travel dates",
+        extractedMemory: "Delete memory about user's travel dates",
+        memoryType: "fact",
+        action: "delete",
       },
     ],
   });
