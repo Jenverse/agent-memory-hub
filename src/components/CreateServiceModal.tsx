@@ -82,7 +82,7 @@ const CreateServiceModal = ({ isOpen, onClose, onCreate }: CreateServiceModalPro
               className="bg-secondary/50 border-border/50 focus:border-primary font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Your Redis database URL. Supports Redis Cloud, Upstash, or self-hosted.
+              Pick the Redis database where you would like to store your memories
             </p>
           </div>
 

@@ -1,4 +1,10 @@
-# Welcome to your Lovable project
+# Agent Memory Hub
+
+A complete memory management system for AI agents with Redis-backed storage and automatic memory extraction.
+
+## 🚀 Quick Start
+
+**New to this project?** Check out [QUICKSTART.md](./QUICKSTART.md) for a 5-minute setup guide!
 
 ## Project info
 
@@ -52,13 +58,26 @@ npm run dev
 
 ## What technologies are used for this project?
 
-This project is built with:
-
+### Frontend
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
+
+### Backend
+- Vercel Serverless Functions
+- Upstash Redis (serverless)
+- OpenAI API (for memory extraction)
+
+## Features
+
+✅ **Memory Service Configuration** - Define custom schemas for short-term and long-term memory
+✅ **Travel Agent Demo** - Interactive chat with memory-aware AI
+✅ **Automatic Memory Extraction** - AI-powered extraction from conversations
+✅ **Redis Storage** - Fast, serverless Redis backend via Upstash
+✅ **API Integration** - RESTful API for memory operations
+✅ **Background Processing** - Cron jobs for automatic memory extraction
 
 ## How can I deploy this project?
 
@@ -71,3 +90,40 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## 📚 Documentation
+
+- **[QUICKSTART.md](./QUICKSTART.md)** - Get started in 5 minutes
+- **[BACKEND_SETUP.md](./BACKEND_SETUP.md)** - Detailed backend setup guide
+- **[MEMORY_STRUCTURE.md](./MEMORY_STRUCTURE.md)** - Understanding memory architecture
+- **API Documentation** - Available in the UI under "API Integration" tab
+
+## 🧪 Testing
+
+Run the API test script:
+
+```bash
+# Make sure vercel dev is running first
+./scripts/test-api.sh
+```
+
+## Project Structure
+
+```
+agent-memory-hub/
+├── src/                    # Frontend (React + TypeScript)
+│   ├── components/         # UI components
+│   ├── pages/             # Page components
+│   ├── lib/               # Utilities and API client
+│   └── hooks/             # React hooks
+├── api/                   # Backend (Vercel Serverless Functions)
+│   ├── memory/            # Memory storage/retrieval endpoints
+│   ├── services/          # Service configuration endpoints
+│   └── cron/              # Background jobs
+├── lib/                   # Shared utilities (frontend + backend)
+│   ├── types.ts           # TypeScript types
+│   ├── redis.ts           # Redis client
+│   ├── validation.ts      # Schema validation
+│   └── memory-extraction.ts  # AI extraction logic
+└── scripts/               # Utility scripts
+```

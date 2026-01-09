@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "api/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/extract-memories",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
+
