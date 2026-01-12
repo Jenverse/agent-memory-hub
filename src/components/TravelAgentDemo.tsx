@@ -235,41 +235,66 @@ Be conversational and warm, but also practical and informative.`;
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Store conversation in short-term memory (both user and agent messages)
+      // Store conversation in short-term memory - adapt to service schema
       try {
         const timestamp = new Date().toISOString();
+        const schema = selectedService?.schemas?.shortTermFields || [];
 
-        // Store user message
-        await memoryAPI.storeShortTerm({
-          service_id: selectedServiceId,
-          data: {
-            user_id: userId,
-            session_id: sessionId,
-            role: "user",
-            text: inputMessage,
-            timestamp,
-            metadata: {
-              model: "gpt-4o-mini",
-              has_memories: memoriesLoaded,
-            },
-          },
-        });
+        // Build data object based on schema fields
+        const buildSchemaData = (userMsg: string, agentMsg: string | null) => {
+          const data: Record<string, any> = {};
 
-        // Store agent response
-        await memoryAPI.storeShortTerm({
-          service_id: selectedServiceId,
-          data: {
-            user_id: userId,
-            session_id: sessionId,
-            role: "agent",
-            text: assistantMessage.content,
-            timestamp,
-            metadata: {
-              model: "gpt-4o-mini",
-              has_memories: memoriesLoaded,
-            },
-          },
-        });
+          for (const field of schema) {
+            const fieldName = field.name.toLowerCase();
+
+            // Map common field names to our data
+            if (fieldName === 'user_id' || fieldName === 'userid') {
+              data[field.name] = userId;
+            } else if (fieldName === 'session_id' || fieldName === 'sessionid') {
+              data[field.name] = sessionId;
+            } else if (fieldName === 'timestamp' || fieldName === 'time' || fieldName === 'created_at') {
+              data[field.name] = timestamp;
+            } else if (fieldName === 'role') {
+              data[field.name] = agentMsg ? "agent" : "user";
+            } else if (fieldName === 'text' || fieldName === 'message' || fieldName === 'content') {
+              data[field.name] = agentMsg || userMsg;
+            } else if (fieldName === 'user_message' || fieldName === 'usermessage') {
+              data[field.name] = userMsg;
+            } else if (fieldName === 'agent_response' || fieldName === 'agentresponse' || fieldName === 'assistant_message') {
+              data[field.name] = agentMsg || "";
+            }
+          }
+
+          return data;
+        };
+
+        // Check if schema uses combined format (user_message + agent_response in one record)
+        const hasCombinedFormat = schema.some(f =>
+          f.name.toLowerCase().includes('user_message') ||
+          f.name.toLowerCase().includes('agent_response')
+        );
+
+        if (hasCombinedFormat) {
+          // Store as single record with both user and agent message
+          const combinedData = buildSchemaData(inputMessage, assistantMessage.content);
+          await memoryAPI.storeShortTerm({
+            service_id: selectedServiceId,
+            data: combinedData,
+          });
+        } else {
+          // Store as separate records (role/text format)
+          const userData = buildSchemaData(inputMessage, null);
+          await memoryAPI.storeShortTerm({
+            service_id: selectedServiceId,
+            data: userData,
+          });
+
+          const agentData = buildSchemaData(inputMessage, assistantMessage.content);
+          await memoryAPI.storeShortTerm({
+            service_id: selectedServiceId,
+            data: agentData,
+          });
+        }
       } catch (memoryError) {
         console.error("Error storing conversation:", memoryError);
         // Don't show error to user, just log it
