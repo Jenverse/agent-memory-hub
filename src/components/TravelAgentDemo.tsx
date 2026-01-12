@@ -500,9 +500,9 @@ Be conversational and warm, but also practical and informative.`;
               {/* Short-term Memory */}
               <div>
                 <h3 className="font-semibold text-lg mb-3">Short-term Memory (Session)</h3>
-                {memoryData.shortTerm?.memories && memoryData.shortTerm.memories.length > 0 ? (
+                {memoryData.shortTerm?.messages && memoryData.shortTerm.messages.length > 0 ? (
                   <div className="space-y-2">
-                    {memoryData.shortTerm.memories.map((msg: any, idx: number) => (
+                    {memoryData.shortTerm.messages.map((msg: any, idx: number) => (
                       <div key={idx} className="border rounded-lg p-3 bg-secondary/20">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs font-medium text-primary">
