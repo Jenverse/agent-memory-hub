@@ -109,7 +109,7 @@ async function storeExtractedMemories(
       // Ensure user_id is set
       memory.data.user_id = memory.data.user_id || userId;
 
-      const memoryKey = RedisKeys.longTermMemory(userId, service.id, memory.bucket_name);
+      const memoryKey = RedisKeys.userBucket(userId, service.id, memory.bucket_name);
 
       // Store as a list entry with timestamp
       await serviceRedis.rpush(memoryKey, {
