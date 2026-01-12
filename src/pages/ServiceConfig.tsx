@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Database, Save, Plus, Clock, Brain, AlertCircle, Sparkles, Code, Copy, Check, User, Plane, ShoppingBag, Calendar } from "lucide-react";
+import { ArrowLeft, Database, Save, Plus, Clock, Brain, AlertCircle, Sparkles, Code, Copy, Check, User, Plane, ShoppingBag, Calendar, Loader2 } from "lucide-react";
+import { serviceAPI } from "@/lib/api-client";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -55,6 +56,8 @@ const ServiceConfig = () => {
   const [agentDetailsChanged, setAgentDetailsChanged] = useState(false);
   const [serviceName, setServiceName] = useState<string>("Loading...");
   const [redisUrl, setRedisUrl] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Short-term memory schema
   const [shortTermFields, setShortTermFields] = useState<SchemaField[]>([]);
@@ -75,35 +78,59 @@ const ServiceConfig = () => {
     exampleMemories: [],
   });
 
-  // Load generated schemas from localStorage
+  // Load service config from backend API
   useEffect(() => {
-    if (id) {
-      const savedData = localStorage.getItem(`service_${id}`);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-
-        // Set service name and Redis URL
-        setServiceName(data.name || "Unnamed Service");
-        setRedisUrl(data.redisUrl || "");
-
-        // Set agent context
-        setAgentContext({
-          purpose: data.agentPurpose || "",
-          goals: data.memoryGoals || [],
-          exampleMemories: [],
-        });
-
-        // Set short-term fields
-        if (data.schemas?.shortTermFields) {
-          setShortTermFields(data.schemas.shortTermFields);
-        }
-
-        // Set all long-term buckets
-        if (data.schemas?.longTermBuckets) {
-          setCustomBuckets(data.schemas.longTermBuckets);
-        }
+    const loadServiceConfig = async () => {
+      if (!id) {
+        setIsLoading(false);
+        return;
       }
-    }
+
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        // Load from backend API
+        const response = await serviceAPI.get(id);
+
+        if (response.success && response.data) {
+          const data = response.data;
+
+          // Set service name and Redis URL
+          setServiceName(data.name || "Unnamed Service");
+          setRedisUrl(data.redisUrl || "");
+
+          // Set agent context
+          setAgentContext({
+            purpose: data.agentPurpose || "",
+            goals: data.memoryGoals || [],
+            exampleMemories: [],
+          });
+
+          // Set short-term fields
+          if (data.schemas?.shortTermFields) {
+            setShortTermFields(data.schemas.shortTermFields);
+          }
+
+          // Set all long-term buckets
+          if (data.schemas?.longTermBuckets) {
+            setCustomBuckets(data.schemas.longTermBuckets);
+          }
+
+          // Also cache to localStorage
+          localStorage.setItem(`service_${id}`, JSON.stringify(data));
+        } else {
+          setLoadError(response.error || "Failed to load service");
+        }
+      } catch (error) {
+        console.error("Error loading service:", error);
+        setLoadError("Failed to load service configuration");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadServiceConfig();
   }, [id]);
 
   const addCustomBucket = () => {
@@ -158,15 +185,55 @@ const ServiceConfig = () => {
     alert("Schema regeneration will be implemented soon!");
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 pb-12">
+          <div className="container mx-auto px-6 flex flex-col items-center justify-center min-h-[60vh]">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-muted-foreground">Loading service configuration...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 pb-12">
+          <div className="container mx-auto px-6">
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Link>
+            <div className="glass-card rounded-xl p-8 text-center">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Failed to Load Service</h2>
+              <p className="text-muted-foreground">{loadError}</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="pt-24 pb-12">
         <div className="container mx-auto px-6">
           {/* Breadcrumb */}
-          <Link 
-            to="/dashboard" 
+          <Link
+            to="/dashboard"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
