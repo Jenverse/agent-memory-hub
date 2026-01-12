@@ -219,6 +219,8 @@ Be conversational and warm, but also practical and informative.`;
             { role: "user", content: inputMessage }
           ],
           temperature: 0.7,
+          service_id: selectedServiceId,
+          user_id: userId,
         }),
       });
 
