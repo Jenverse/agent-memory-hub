@@ -26,6 +26,83 @@ interface Message {
   content: string;
 }
 
+interface ExtractedMemory {
+  bucket_name: string;
+  data: Record<string, any>;
+}
+
+const MEMORY_DELIMITER = '---MEMORY_EXTRACT---';
+
+// Build memory extraction instructions based on service schema
+function buildMemoryExtractionPrompt(service: ServiceConfig): string {
+  const buckets = service.schemas?.longTermBuckets || [];
+
+  if (buckets.length === 0) {
+    return '';
+  }
+
+  let prompt = `\n\n---\nMEMORY EXTRACTION INSTRUCTIONS:
+After your response to the user, you MUST append the following delimiter and extract any memorable information:
+
+${MEMORY_DELIMITER}
+{"memories": [...]}
+
+The memories array should contain objects with:
+- "bucket_name": the name of the memory bucket
+- "data": an object with fields matching the bucket schema
+
+Available memory buckets:\n`;
+
+  for (const bucket of buckets) {
+    prompt += `\n- Bucket: "${bucket.name}"`;
+    prompt += `\n  Description: ${bucket.description || 'No description'}`;
+    prompt += `\n  Fields:`;
+    for (const field of bucket.schema || []) {
+      prompt += `\n    - ${field.name} (${field.type}${field.required ? ', required' : ''})`;
+    }
+  }
+
+  prompt += `\n
+EXTRACTION RULES:
+1. ONLY extract information explicitly stated by the user
+2. Do NOT assume or infer information
+3. If no memorable information in this message, return: ${MEMORY_DELIMITER}
+{"memories": []}
+4. ALWAYS include the delimiter and JSON, even if memories array is empty
+
+Example response format:
+"Here's my response to you about travel planning...
+
+${MEMORY_DELIMITER}
+{"memories": [{"bucket_name": "preferences", "data": {"budget_range": "$3000"}}]}"
+`;
+
+  return prompt;
+}
+
+// Parse response to separate chat content from memory extraction
+function parseResponseWithMemories(content: string): { chatResponse: string; memories: ExtractedMemory[] } {
+  const parts = content.split(MEMORY_DELIMITER);
+
+  if (parts.length < 2) {
+    return { chatResponse: content.trim(), memories: [] };
+  }
+
+  const chatResponse = parts[0].trim();
+  const memoryPart = parts[1].trim();
+
+  try {
+    const parsed = JSON.parse(memoryPart);
+    return {
+      chatResponse,
+      memories: Array.isArray(parsed.memories) ? parsed.memories : []
+    };
+  } catch (e) {
+    console.error('Failed to parse memory extraction:', e);
+    return { chatResponse, memories: [] };
+  }
+}
+
 const TravelAgentDemo = () => {
   const [userId, setUserId] = useState("");
   const [sessionId] = useState(() => `session_${Date.now()}`);
@@ -203,6 +280,14 @@ Be conversational and warm, but also practical and informative.`;
         }
       }
 
+      // Add memory extraction instructions if service has long-term buckets
+      if (selectedService) {
+        const memoryPrompt = buildMemoryExtractionPrompt(selectedService);
+        if (memoryPrompt) {
+          systemPrompt += memoryPrompt;
+        }
+      }
+
       // Call backend API which uses server-side OpenAI key
       const response = await fetch("/api/chat/completions", {
         method: "POST",
@@ -219,8 +304,6 @@ Be conversational and warm, but also practical and informative.`;
             { role: "user", content: inputMessage }
           ],
           temperature: 0.7,
-          service_id: selectedServiceId,
-          user_id: userId,
         }),
       });
 
@@ -230,12 +313,34 @@ Be conversational and warm, but also practical and informative.`;
       }
 
       const data = await response.json();
+      const fullContent = data.data.message.content;
+
+      // Parse response to extract memories
+      const { chatResponse, memories } = parseResponseWithMemories(fullContent);
+
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.data.message.content,
+        content: chatResponse,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Store extracted memories in long-term storage (background)
+      if (memories.length > 0) {
+        console.log(`Extracted ${memories.length} memories:`, memories);
+        for (const memory of memories) {
+          try {
+            await memoryAPI.storeLongTerm({
+              service_id: selectedServiceId,
+              user_id: userId,
+              bucket_name: memory.bucket_name,
+              data: memory.data,
+            });
+          } catch (memErr) {
+            console.error('Error storing long-term memory:', memErr);
+          }
+        }
+      }
 
       // Store conversation in short-term memory - adapt to service schema
       try {
