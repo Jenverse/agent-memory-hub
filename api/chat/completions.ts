@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getRedisClient, getServiceRedisClient, RedisKeys } from '../lib/redis.js';
-import type { ServiceConfig, MemoryBucket } from '../lib/types.js';
+import type { ServiceConfig } from '../lib/types.js';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
