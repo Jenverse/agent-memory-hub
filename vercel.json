@@ -5,6 +5,10 @@
       "maxDuration": 60
     }
   },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
   "crons": [
     {
       "path": "/api/cron/extract-memories",
