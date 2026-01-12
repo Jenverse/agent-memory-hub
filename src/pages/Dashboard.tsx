@@ -34,39 +34,12 @@ const Dashboard = () => {
 
   // Load services from backend
   useEffect(() => {
-
     const loadServices = async () => {
-      // Load from backend API
+      // Load from backend API only - no localStorage syncing
       const response = await serviceAPI.list();
 
-      // Also check localStorage for any services not in backend
-      const serviceIds = JSON.parse(localStorage.getItem("service_ids") || "[]");
-      const backendServiceIds = response.success && response.data
-        ? response.data.map((s: any) => s.id)
-        : [];
-
-      // Sync localStorage services to backend if missing
-      for (const id of serviceIds) {
-        if (!backendServiceIds.includes(id)) {
-          const serviceData = localStorage.getItem(`service_${id}`);
-          if (serviceData) {
-            try {
-              const data = JSON.parse(serviceData);
-              console.log(`Syncing service "${data.name}" to backend...`);
-              await serviceAPI.create(data);
-              console.log(`✅ Synced "${data.name}" to backend`);
-            } catch (error) {
-              console.warn(`Failed to sync service ${id}:`, error);
-            }
-          }
-        }
-      }
-
-      // Reload from backend after sync
-      const finalResponse = await serviceAPI.list();
-
-      if (finalResponse.success && finalResponse.data) {
-        const loadedServices: Service[] = finalResponse.data.map((data: any) => {
+      if (response.success && response.data) {
+        const loadedServices: Service[] = response.data.map((data: any) => {
           const bucketNames = data.schemas?.longTermBuckets?.map((b: any) => b.name) || [];
           return {
             id: data.id,
@@ -79,26 +52,8 @@ const Dashboard = () => {
         });
         setServices(loadedServices);
       } else {
-        // Fallback to localStorage if API fails
-        const loadedServices: Service[] = [];
-
-        serviceIds.forEach((id: string) => {
-          const serviceData = localStorage.getItem(`service_${id}`);
-          if (serviceData) {
-            const data = JSON.parse(serviceData);
-            const bucketNames = data.schemas?.longTermBuckets?.map((b: any) => b.name) || [];
-            loadedServices.push({
-              id: data.id,
-              name: data.name,
-              status: "configuring",
-              hasShortTerm: (data.schemas?.shortTermFields?.length || 0) > 0,
-              longTermBucketNames: bucketNames,
-              lastActive: "just now",
-            });
-          }
-        });
-
-        setServices(loadedServices);
+        console.error("Failed to load services from backend");
+        setServices([]);
       }
     };
 
