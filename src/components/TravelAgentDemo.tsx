@@ -128,12 +128,6 @@ const TravelAgentDemo = () => {
       return;
     }
 
-    const apiKey = localStorage.getItem("openai_api_key");
-    if (!apiKey) {
-      toast.error("Please configure your OpenAI API key in settings");
-      return;
-    }
-
     const userMessage: Message = {
       role: "user",
       content: inputMessage,
@@ -209,14 +203,13 @@ Be conversational and warm, but also practical and informative.`;
         }
       }
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      // Call backend API which uses server-side OpenAI key
+      const response = await fetch("/api/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
@@ -230,13 +223,14 @@ Be conversational and warm, but also practical and informative.`;
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API error: ${response.statusText}`);
       }
 
       const data = await response.json();
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.choices[0].message.content,
+        content: data.data.message.content,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -281,8 +275,8 @@ Be conversational and warm, but also practical and informative.`;
         // Don't show error to user, just log it
       }
     } catch (error) {
-      console.error("Error calling OpenAI:", error);
-      toast.error("Failed to get response. Please check your API key and try again.");
+      console.error("Error calling chat API:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to get response. Please try again.");
     } finally {
       setIsLoading(false);
     }
