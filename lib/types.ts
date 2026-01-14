@@ -1,4 +1,5 @@
 // Shared TypeScript types for the memory service
+// Based on AWS AgentCore Memory schema
 
 export type FieldType = 'string' | 'number' | 'boolean' | 'array' | 'object';
 
@@ -32,6 +33,32 @@ export interface ServiceConfig {
   updatedAt?: string;
 }
 
+// ============================================
+// SHORT-TERM MEMORY (Events)
+// ============================================
+
+// What you POST to create a short-term event
+export interface ShortTermEventInput {
+  userId: string;                          // Required: 1-255 chars
+  sessionId?: string;                      // Optional: 1-100 chars
+  role: 'USER' | 'ASSISTANT' | 'TOOL';     // Message role
+  text: string;                            // The message content
+  timestamp: number;                       // Unix timestamp in milliseconds
+  metadata?: Record<string, string>;       // Optional: max 15 key-value pairs
+}
+
+// What you GET back (stored event with auto-generated fields)
+export interface ShortTermEvent {
+  eventId: string;                         // Auto-generated: "evt-..."
+  userId: string;
+  sessionId?: string;
+  role: 'USER' | 'ASSISTANT' | 'TOOL';
+  text: string;
+  timestamp: number;
+  metadata?: Record<string, string>;
+}
+
+// Legacy interface for backward compatibility
 export interface ShortTermMemory {
   user_id: string;
   session_id: string;
@@ -41,6 +68,34 @@ export interface ShortTermMemory {
   metadata?: Record<string, any>;
 }
 
+// ============================================
+// LONG-TERM MEMORY (Memory Records)
+// ============================================
+
+// Memory types (4 built-in types from AWS AgentCore)
+export type MemoryType =
+  | 'user_preferences'   // User preferences, choices, and styles
+  | 'semantic'           // Facts and contextual knowledge
+  | 'summary'            // Session summaries
+  | 'episodic';          // Structured episodes (scenario, intent, actions, outcome)
+
+// Content can be text or structured
+export interface MemoryContent {
+  text?: string;
+  structured?: Record<string, any>;
+}
+
+// The long-term memory record schema
+export interface LongTermMemoryRecord {
+  memoryRecordId: string;                  // Auto-generated: "mem-..." (40-50 chars)
+  memoryType: MemoryType;                  // Which type of memory this is
+  userId: string;                          // User this memory belongs to
+  content: MemoryContent;                  // The actual memory (text or structured)
+  createdAt: string;                       // ISO timestamp (auto-generated)
+  metadata?: Record<string, string>;       // Optional: max 15 key-value pairs
+}
+
+// Legacy interface for backward compatibility
 export interface LongTermMemory {
   id: string;
   bucket: string;

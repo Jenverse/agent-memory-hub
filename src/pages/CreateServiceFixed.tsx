@@ -8,39 +8,60 @@ import { Label } from "@/components/ui/label";
 import { serviceAPI } from "@/lib/api-client";
 import { toast } from "@/components/ui/sonner";
 
-// Fixed schema structure (AWS-style)
+// Fixed schema structure (AWS AgentCore Memory style)
 const FIXED_SHORT_TERM_SCHEMA = {
   description: "Raw conversation events organized by session",
   fields: [
-    { name: "user_id", type: "string", description: "Unique user identifier" },
-    { name: "session_id", type: "string", description: "Unique session identifier" },
+    { name: "eventId", type: "string", description: "Auto-generated event ID (evt-...)" },
+    { name: "userId", type: "string", description: "Unique user identifier (1-255 chars)" },
+    { name: "sessionId", type: "string", description: "Session identifier (optional, 1-100 chars)" },
     { name: "role", type: "string", description: "Message role (USER, ASSISTANT, TOOL)" },
     { name: "text", type: "string", description: "The message content" },
     { name: "timestamp", type: "number", description: "Unix timestamp in milliseconds" },
+    { name: "metadata", type: "object", description: "Optional key-value pairs (max 15)" },
   ]
 };
 
-// AWS AgentCore Memory extraction types
-const FIXED_LONG_TERM_BUCKETS = [
+// AWS AgentCore Memory: 4 built-in memory strategies
+const FIXED_LONG_TERM_STRATEGIES = [
+  {
+    name: "user_preferences",
+    icon: "⭐",
+    description: "User preferences, choices, and interaction styles learned from conversations",
+    example: '"prefers window seats", "likes Italian food", "uses dark mode"',
+  },
   {
     name: "semantic",
     icon: "🧠",
-    description: "Facts, knowledge, and preferences extracted from conversations",
-    example: '"User works at Acme Corp", "Prefers Python over JavaScript", "Budget is $50k"',
+    description: "Facts, knowledge, and contextual information extracted from conversations",
+    example: '"works at Acme Corp", "order #ABC-123 relates to ticket #789"',
+  },
+  {
+    name: "summary",
+    icon: "📝",
+    description: "Condensed summaries of sessions capturing key topics and decisions",
+    example: '"troubleshot software v2.1, tried restart, provided KB link"',
   },
   {
     name: "episodic",
     icon: "📅",
-    description: "Past events, experiences, and interactions the user has had",
-    example: '"Had a demo call last Tuesday", "Visited Paris in 2023", "Attended AWS re:Invent"',
-  },
-  {
-    name: "procedural",
-    icon: "📋",
-    description: "How-to knowledge and processes learned during conversations",
-    example: '"Prefers 3-step explanations", "Likes code examples first", "Wants summary at end"',
+    description: "Structured episodes with scenario, intent, actions, and outcomes",
+    example: '"booked flight to Paris, chose window seat, successful"',
   },
 ];
+
+// Long-term memory record schema (same for all memory types)
+const LONG_TERM_RECORD_SCHEMA = {
+  description: "Extracted insights from conversations",
+  fields: [
+    { name: "memoryRecordId", type: "string", description: "Auto-generated ID (mem-..., 40-50 chars)" },
+    { name: "memoryType", type: "string", description: "Memory type (user_preferences, semantic, summary, episodic)" },
+    { name: "userId", type: "string", description: "User this memory belongs to" },
+    { name: "content", type: "object", description: "Memory content: { text: string } or { structured: {...} }" },
+    { name: "createdAt", type: "string", description: "ISO timestamp (auto-generated)" },
+    { name: "metadata", type: "object", description: "Optional key-value pairs (max 15)" },
+  ]
+};
 
 const CreateServiceFixed = () => {
   const navigate = useNavigate();
@@ -50,34 +71,37 @@ const CreateServiceFixed = () => {
 
   const handleCreate = async () => {
     if (!serviceName || !redisUrl) return;
-    
+
     setIsCreating(true);
-    
-    // Build the fixed schema structure
+
+    // Build the fixed schema structure (AWS AgentCore Memory style)
     const serviceConfig = {
       id: Date.now().toString(),
       name: serviceName,
       redisUrl,
       serviceType: "fixed", // Mark as fixed type
-      agentPurpose: "Fixed schema memory service (AWS-style)",
-      memoryGoals: ["Facts extraction", "Preferences extraction", "Session summaries"],
+      agentPurpose: "Fixed schema memory service (AWS AgentCore Memory style)",
+      memoryGoals: ["User preferences extraction", "Facts extraction", "Session summaries", "Episodic memory"],
       schemas: {
         shortTermFields: FIXED_SHORT_TERM_SCHEMA.fields.map((f, i) => ({
           id: `st-${i}`,
           name: f.name,
           type: f.type,
-          required: true,
+          required: f.name !== 'sessionId' && f.name !== 'metadata' && f.name !== 'eventId',
           description: f.description,
         })),
-        longTermBuckets: FIXED_LONG_TERM_BUCKETS.map((bucket, i) => ({
-          id: `bucket-${i}`,
-          name: bucket.name,
-          description: bucket.description,
-          isUnstructured: true, // Text-based like AWS
-          schema: [
-            { id: "1", name: "content", type: "string", required: true, description: "The extracted memory text" },
-            { id: "2", name: "timestamp", type: "string", required: false, description: "When this was extracted" },
-          ],
+        longTermBuckets: FIXED_LONG_TERM_STRATEGIES.map((strategy, i) => ({
+          id: `strategy-${i}`,
+          name: strategy.name,
+          description: strategy.description,
+          isUnstructured: true, // Content-based like AWS
+          schema: LONG_TERM_RECORD_SCHEMA.fields.map((f, j) => ({
+            id: `${i}-${j}`,
+            name: f.name,
+            type: f.type,
+            required: f.name !== 'metadata',
+            description: f.description,
+          })),
         })),
       },
     };
@@ -126,7 +150,7 @@ const CreateServiceFixed = () => {
               <div>
                 <h1 className="text-2xl font-bold">Create Fixed Memory Service</h1>
                 <p className="text-sm text-muted-foreground">
-                  AWS-style predefined schema (Facts, Preferences, Summary)
+                  AWS AgentCore Memory style (user_preferences, semantic, summary, episodic)
                 </p>
               </div>
             </div>
@@ -216,21 +240,46 @@ const CreateServiceFixed = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold">Long-Term Memory</h3>
-                  <p className="text-sm text-muted-foreground">3 predefined buckets for extracted insights</p>
+                  <p className="text-sm text-muted-foreground">4 built-in memory strategies (AWS AgentCore style)</p>
                 </div>
               </div>
 
-              <div className="grid gap-4">
-                {FIXED_LONG_TERM_BUCKETS.map((bucket) => (
-                  <div key={bucket.name} className="bg-secondary/30 rounded-lg p-4">
+              {/* Memory Record Schema */}
+              <div className="bg-secondary/30 rounded-lg p-4 mb-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">MEMORY RECORD SCHEMA (all strategies use this)</p>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-muted-foreground">
+                      <th className="pb-2 font-medium">Field</th>
+                      <th className="pb-2 font-medium">Type</th>
+                      <th className="pb-2 font-medium">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {LONG_TERM_RECORD_SCHEMA.fields.map((field) => (
+                      <tr key={field.name} className="border-t border-border/30">
+                        <td className="py-2 font-mono text-primary">{field.name}</td>
+                        <td className="py-2 text-muted-foreground">{field.type}</td>
+                        <td className="py-2 text-muted-foreground">{field.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Memory Strategies */}
+              <p className="text-xs font-semibold text-muted-foreground mb-2">MEMORY STRATEGIES (what gets extracted)</p>
+              <div className="grid gap-3">
+                {FIXED_LONG_TERM_STRATEGIES.map((strategy) => (
+                  <div key={strategy.name} className="bg-secondary/30 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">{bucket.icon}</span>
-                      <span className="font-semibold capitalize">{bucket.name}</span>
+                      <span className="text-lg">{strategy.icon}</span>
+                      <span className="font-semibold">{strategy.name}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">{bucket.description}</p>
+                    <p className="text-sm text-muted-foreground mb-2">{strategy.description}</p>
                     <div className="bg-background/50 rounded p-2">
                       <p className="text-xs font-mono text-muted-foreground">
-                        Example: {bucket.example}
+                        Example: {strategy.example}
                       </p>
                     </div>
                   </div>

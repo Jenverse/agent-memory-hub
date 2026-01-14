@@ -1,43 +1,83 @@
 // Memory extraction logic using OpenAI
-import type { ServiceConfig, ShortTermMemory } from './types';
+// Based on AWS AgentCore Memory schema with 4 built-in memory types
+import type { ServiceConfig, ShortTermMemory, ShortTermEvent, LongTermMemoryRecord, MemoryType } from './types';
+
+// Generate a unique memory record ID
+function generateMemoryRecordId(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let id = 'mem-';
+  for (let i = 0; i < 40; i++) {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return id;
+}
+
+// Convert extracted data to LongTermMemoryRecord format
+export function createMemoryRecord(
+  memoryType: MemoryType,
+  userId: string,
+  content: { text?: string; structured?: Record<string, any> },
+  metadata?: Record<string, string>
+): LongTermMemoryRecord {
+  return {
+    memoryRecordId: generateMemoryRecordId(),
+    memoryType,
+    userId,
+    content,
+    createdAt: new Date().toISOString(),
+    metadata,
+  };
+}
 
 export async function extractMemoriesFromConversation(
-  messages: ShortTermMemory[],
-  serviceConfig: ServiceConfig
-): Promise<Record<string, any[]>> {
+  messages: ShortTermMemory[] | ShortTermEvent[],
+  serviceConfig: ServiceConfig,
+  userId: string
+): Promise<LongTermMemoryRecord[]> {
   const openaiApiKey = process.env.OPENAI_API_KEY;
 
   if (!openaiApiKey) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
   }
 
-  // Build conversation context
+  // Build conversation context (support both old and new event format)
   const conversationText = messages
-    .map((m) => `${m.role === 'user' ? 'User' : 'Agent'}: ${m.text}`)
+    .map((m) => {
+      const role = 'role' in m ? m.role : 'user';
+      const text = m.text;
+      return `${role === 'USER' || role === 'user' ? 'User' : role === 'ASSISTANT' || role === 'agent' ? 'Assistant' : 'Tool'}: ${text}`;
+    })
     .join('\n');
 
-  // Separate unstructured and structured buckets
-  const unstructuredBuckets = serviceConfig.schemas.longTermBuckets.filter(b => b.isUnstructured);
-  const structuredBuckets = serviceConfig.schemas.longTermBuckets.filter(b => !b.isUnstructured);
+  // AWS AgentCore Memory: 4 built-in strategies
+  const strategies = [
+    {
+      id: 'user_preferences',
+      description: 'User preferences, choices, and interaction styles learned from conversations',
+      examples: 'prefers window seats, likes Italian food, uses dark mode',
+    },
+    {
+      id: 'semantic',
+      description: 'Facts, knowledge, and contextual information extracted from conversations',
+      examples: 'works at Acme Corp, order #ABC-123 relates to ticket #789',
+    },
+    {
+      id: 'summary',
+      description: 'Condensed summaries of sessions capturing key topics and decisions',
+      examples: 'troubleshot software v2.1, tried restart, provided KB link',
+    },
+    {
+      id: 'episodic',
+      description: 'Structured episodes with scenario, intent, actions, and outcomes',
+      examples: 'booked flight to Paris, chose window seat, successful',
+    },
+  ];
 
-  // Build extraction prompt
-  const structuredDescription = structuredBuckets
-    .map((bucket) => {
-      const fields = bucket.schema
-        .map((field) => `  - ${field.name} (${field.type}${field.required ? ', required' : ''})`)
-        .join('\n');
-      return `${bucket.name}:\n  Description: ${bucket.description}\n  Fields:\n${fields}`;
-    })
+  const strategiesDescription = strategies
+    .map((s) => `${s.id}:\n  Description: ${s.description}\n  Examples: ${s.examples}`)
     .join('\n\n');
 
-  const unstructuredDescription = unstructuredBuckets.length > 0
-    ? `\n\nUNSTRUCTURED BUCKETS (for information that doesn't fit structured categories):\n` +
-      unstructuredBuckets
-        .map((bucket) => `${bucket.name}: ${bucket.description}`)
-        .join('\n')
-    : '';
-
-  const prompt = `You are a memory extraction system for an AI agent.
+  const prompt = `You are a memory extraction system for an AI agent using AWS AgentCore Memory.
 
 Agent Purpose: ${serviceConfig.agentPurpose}
 
@@ -47,42 +87,34 @@ ${serviceConfig.memoryGoals.map((g) => `- ${g}`).join('\n')}
 Conversation:
 ${conversationText}
 
-Extract data from this conversation and organize it into the following memory buckets:
+Extract data from this conversation and organize it into the following 4 MEMORY STRATEGIES:
 
-STRUCTURED BUCKETS (extract specific fields):
-${structuredDescription}
-${unstructuredDescription}
+${strategiesDescription}
 
 INSTRUCTIONS:
-1. For STRUCTURED buckets: Extract data that matches the defined schema fields
-2. For UNSTRUCTURED buckets: Extract relevant information as free-form text entries
-3. Only include buckets where you found relevant information
-4. For structured buckets, ensure all required fields are present
-5. For unstructured buckets, create text entries for information that doesn't fit structured categories
+1. user_preferences: Extract preferences, choices, and styles the user has expressed
+2. semantic: Extract facts, relationships, and contextual knowledge
+3. summary: Create a brief summary of what was discussed/accomplished
+4. episodic: For significant interactions, capture scenario/intent/actions/outcome
 
-Return a JSON object where each key is a bucket name and the value is an array of objects.
+Return a JSON object where each key is a strategy ID and the value is an array of extracted content.
+Use "text" for simple text content, or "structured" for complex data.
 
 Example format:
 {
-  "preferences": [
-    {
-      "budget_range": "$3000-5000",
-      "dietary_restrictions": ["vegetarian"]
-    }
+  "user_preferences": [
+    { "text": "prefers window seats" },
+    { "text": "likes Italian food" }
   ],
-  "facts": [
-    {
-      "fact_type": "occupation",
-      "fact_value": "software engineer"
-    }
+  "semantic": [
+    { "text": "works at Acme Corp as senior engineer" },
+    { "structured": { "relationship": "order #ABC-123 relates to ticket #789" } }
   ],
-  "generic_memory": [
-    {
-      "text": "User mentioned they love trying local street food when traveling"
-    },
-    {
-      "text": "User prefers morning flights because they sleep better on planes"
-    }
+  "summary": [
+    { "text": "discussed flight booking options, selected Paris trip for next month" }
+  ],
+  "episodic": [
+    { "structured": { "scenario": "flight booking", "intent": "book Paris trip", "actions": ["searched flights", "selected window seat"], "outcome": "success" } }
   ]
 }`;
 
@@ -98,7 +130,7 @@ Example format:
         messages: [
           {
             role: 'system',
-            content: 'You are a memory extraction system. Extract structured data from conversations and return valid JSON only.',
+            content: 'You are a memory extraction system using AWS AgentCore Memory format. Extract data into the 4 strategies and return valid JSON only.',
           },
           {
             role: 'user',
@@ -117,7 +149,23 @@ Example format:
     const data = await response.json();
     const extractedData = JSON.parse(data.choices[0].message.content);
 
-    return extractedData;
+    // Convert extracted data to LongTermMemoryRecord format
+    const memoryRecords: LongTermMemoryRecord[] = [];
+
+    for (const memoryType of ['user_preferences', 'semantic', 'summary', 'episodic'] as MemoryType[]) {
+      const items = extractedData[memoryType];
+      if (items && Array.isArray(items)) {
+        for (const item of items) {
+          const content = item.text
+            ? { text: item.text }
+            : { structured: item.structured || item };
+
+          memoryRecords.push(createMemoryRecord(memoryType, userId, content));
+        }
+      }
+    }
+
+    return memoryRecords;
   } catch (error) {
     console.error('Error extracting memories:', error);
     throw error;

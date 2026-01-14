@@ -234,29 +234,32 @@ const ServiceConfig = () => {
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-medium text-primary">Fixed Memory Buckets</p>
+                  <p className="font-medium text-primary">Fixed Memory Strategies</p>
                   <p className="text-muted-foreground">
-                    This service uses the AWS AgentCore memory structure. Buckets cannot be modified.
+                    This service uses the AWS AgentCore Memory structure with 4 built-in strategies. Strategies cannot be modified.
                   </p>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Memory Buckets (Read-only)</h3>
+                <h3 className="font-semibold text-lg">Memory Strategies (Read-only)</h3>
                 <div className="grid gap-4">
                   {customBuckets.map((bucket) => (
                     <div key={bucket.id} className="bg-secondary/30 rounded-xl p-5 border border-border/30">
                       <div className="flex items-center gap-3 mb-3">
                         <span className="text-2xl">
-                          {bucket.name === 'semantic' ? '🧠' : bucket.name === 'episodic' ? '📅' : '📋'}
+                          {bucket.name === 'user_preferences' ? '⭐' :
+                           bucket.name === 'semantic' ? '🧠' :
+                           bucket.name === 'summary' ? '📝' :
+                           bucket.name === 'episodic' ? '📅' : '📋'}
                         </span>
                         <div>
-                          <h4 className="font-semibold capitalize">{bucket.name}</h4>
+                          <h4 className="font-semibold">{bucket.name}</h4>
                           <p className="text-sm text-muted-foreground">{bucket.description}</p>
                         </div>
                       </div>
                       <div className="bg-secondary/50 rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-2">Schema Fields:</p>
+                        <p className="text-xs text-muted-foreground mb-2">Memory Record Schema:</p>
                         <div className="flex flex-wrap gap-2">
                           {bucket.schema.map((field) => (
                             <span key={field.id} className="text-xs font-mono bg-secondary px-2 py-1 rounded">
@@ -427,7 +430,7 @@ Response:
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          navigator.clipboard.writeText(`GET /long-term/retrieve?user_id=user_123&bucket_name=user_preferences`);
+                          navigator.clipboard.writeText(`GET /long-term/retrieve?userId=123&memoryType=user_preferences`);
                           setCopiedEndpoint('long-retrieve');
                           setTimeout(() => setCopiedEndpoint(null), 2000);
                         }}
@@ -439,22 +442,23 @@ Response:
                         )}
                       </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground">Get long-term memories from specific buckets</p>
+                    <p className="text-sm text-muted-foreground">Get long-term memories by type</p>
                     <div className="bg-secondary/50 rounded-lg p-4">
                       <pre className="text-xs overflow-x-auto">
 {`Query Parameters:
-  user_id: string (required)
-  bucket_name: string (optional, e.g., "user_preferences", "facts")
+  userId: string (required)
+  memoryType: string (optional, e.g., "user_preferences", "semantic", "summary", "episodic")
 
 Response:
 {
   "memories": [
     {
-      "id": "mem_123",
-      "bucket": "user_preferences",
-      "data": { /* bucket schema fields */ },
-      "created_at": "2024-01-07T12:00:00Z",
-      "updated_at": "2024-01-07T12:00:00Z"
+      "memoryRecordId": "mem-abc123...",
+      "memoryType": "user_preferences",
+      "userId": "123",
+      "content": { "text": "prefers window seats" },
+      "createdAt": "2024-01-07T12:00:00Z",
+      "metadata": {}
     }
   ]
 }`}
