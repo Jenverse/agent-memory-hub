@@ -267,8 +267,8 @@ const CreateServiceFixed = () => {
                 </table>
               </div>
 
-              {/* Memory Strategies */}
-              <p className="text-xs font-semibold text-muted-foreground mb-2">MEMORY STRATEGIES (what gets extracted)</p>
+              {/* Memory Types */}
+              <p className="text-xs font-semibold text-muted-foreground mb-2">MEMORY TYPES (what gets extracted)</p>
               <div className="grid gap-3">
                 {FIXED_LONG_TERM_STRATEGIES.map((strategy) => (
                   <div key={strategy.name} className="bg-secondary/30 rounded-lg p-4">
