@@ -280,232 +280,314 @@ const ServiceConfig = () => {
                 <div className="flex items-start gap-3">
                   <Code className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <h3 className="font-semibold mb-2">Memory Flow Journey</h3>
+                    <h3 className="font-semibold mb-2">API Endpoints Reference</h3>
                     <p className="text-sm text-muted-foreground">
-                      Follow the numbered steps below to understand how your agent interacts with the memory system.
+                      Base URL: <code className="bg-secondary px-2 py-0.5 rounded">/api/services/{id}</code>
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* STEP 1: Store Conversation */}
+              {/* Events (Short-Term Memory) */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-                    1
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-amber-500" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg">Store Conversation</h3>
-                    <p className="text-sm text-muted-foreground">Agent → Short-Term Memory</p>
+                    <h3 className="font-semibold text-lg">Events (Short-Term Memory)</h3>
+                    <p className="text-sm text-muted-foreground">Store and retrieve conversation events</p>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground ml-13">
-                  Your agent calls this endpoint after each conversation turn to store the interaction in short-term memory.
-                </p>
 
-                <div className="glass-card p-6 rounded-xl space-y-3 ml-13">
+                {/* POST /events */}
+                <div className="glass-card p-5 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="px-2 py-1 bg-success/20 text-success rounded text-xs font-mono font-semibold">
                         POST
                       </div>
-                      <code className="text-sm">/short-term/store</code>
+                      <code className="text-sm">/api/services/{id}/events</code>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(`POST /short-term/store`);
-                        setCopiedEndpoint('short-store');
+                        navigator.clipboard.writeText(`POST /api/services/${id}/events`);
+                        setCopiedEndpoint('post-events');
                         setTimeout(() => setCopiedEndpoint(null), 2000);
                       }}
                     >
-                      {copiedEndpoint === 'short-store' ? (
+                      {copiedEndpoint === 'post-events' ? (
                         <Check className="h-4 w-4 text-success" />
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">Store conversation data in short-term memory</p>
+                  <p className="text-sm text-muted-foreground">Store a conversation event</p>
                   <div className="bg-secondary/50 rounded-lg p-4">
                     <pre className="text-xs overflow-x-auto">
-{`{
-  "user_id": "user_123",
-  "session_id": "session_456",
-  "data": {
-    "message": "User's message",
-    "response": "Agent's response",
-    "timestamp": "2024-01-07T12:00:00Z"
-    // ... other short-term schema fields
-  }
+{`// Request Body
+{
+  "userId": "user-123",
+  "sessionId": "session-456",
+  "role": "USER",              // USER | ASSISTANT | TOOL
+  "text": "I'd like to book a flight to Paris",
+  "timestamp": 1704628800000,  // Unix ms
+  "metadata": {}               // Optional
+}
+
+// Response
+{
+  "eventId": "evt-abc123...",  // Auto-generated
+  "userId": "user-123",
+  "sessionId": "session-456",
+  "role": "USER",
+  "text": "I'd like to book a flight to Paris",
+  "timestamp": 1704628800000
 }`}
                     </pre>
                   </div>
                 </div>
-              </div>
 
-              {/* STEP 2: Retrieve Context */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-                    2
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">Retrieve Context</h3>
-                    <p className="text-sm text-muted-foreground">Agent ← Short-Term + Long-Term Memory</p>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground ml-13">
-                  Your agent retrieves both recent conversations and persistent memories together to get full context.
-                </p>
-
-                {/* Short-Term Retrieve */}
-                <div className="ml-13 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="font-medium text-sm">Recent Conversations</h4>
-                  </div>
-                  <div className="glass-card p-6 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="px-2 py-1 bg-primary/20 text-primary rounded text-xs font-mono font-semibold">
-                          GET
-                        </div>
-                        <code className="text-sm">/short-term/retrieve</code>
+                {/* GET /events */}
+                <div className="glass-card p-5 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="px-2 py-1 bg-primary/20 text-primary rounded text-xs font-mono font-semibold">
+                        GET
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`GET /short-term/retrieve?user_id=user_123&session_id=session_456`);
-                          setCopiedEndpoint('short-retrieve');
-                          setTimeout(() => setCopiedEndpoint(null), 2000);
-                        }}
-                      >
-                        {copiedEndpoint === 'short-retrieve' ? (
-                          <Check className="h-4 w-4 text-success" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <code className="text-sm">/api/services/{id}/events</code>
                     </div>
-                    <p className="text-sm text-muted-foreground">Get conversation history from current session</p>
-                    <div className="bg-secondary/50 rounded-lg p-4">
-                      <pre className="text-xs overflow-x-auto">
-{`Query Parameters:
-  user_id: string (required)
-  session_id: string (required)
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`GET /api/services/${id}/events?userId=user-123&sessionId=session-456`);
+                        setCopiedEndpoint('get-events');
+                        setTimeout(() => setCopiedEndpoint(null), 2000);
+                      }}
+                    >
+                      {copiedEndpoint === 'get-events' ? (
+                        <Check className="h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">List events for a user/session</p>
+                  <div className="bg-secondary/50 rounded-lg p-4">
+                    <pre className="text-xs overflow-x-auto">
+{`// Query Parameters
+userId: string (required)
+sessionId: string (optional)
 
-Response:
+// Response
 {
-  "conversations": [
+  "events": [
     {
-      "message": "User's message",
-      "response": "Agent's response",
-      "timestamp": "2024-01-07T12:00:00Z"
+      "eventId": "evt-abc123...",
+      "userId": "user-123",
+      "sessionId": "session-456",
+      "role": "USER",
+      "text": "I'd like to book a flight to Paris",
+      "timestamp": 1704628800000
     }
   ]
 }`}
-                      </pre>
-                    </div>
+                    </pre>
                   </div>
                 </div>
 
-                {/* Long-Term Retrieve */}
-                <div className="ml-13 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="font-medium text-sm">Persistent Memories</h4>
-                  </div>
-                  <div className="glass-card p-6 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="px-2 py-1 bg-primary/20 text-primary rounded text-xs font-mono font-semibold">
-                          GET
-                        </div>
-                        <code className="text-sm">/long-term/retrieve</code>
+                {/* DELETE /events/{eventId} */}
+                <div className="glass-card p-5 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="px-2 py-1 bg-destructive/20 text-destructive rounded text-xs font-mono font-semibold">
+                        DELETE
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(`GET /long-term/retrieve?userId=123&memoryType=user_preferences`);
-                          setCopiedEndpoint('long-retrieve');
-                          setTimeout(() => setCopiedEndpoint(null), 2000);
-                        }}
-                      >
-                        {copiedEndpoint === 'long-retrieve' ? (
-                          <Check className="h-4 w-4 text-success" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <code className="text-sm">/api/services/{id}/events/{'{eventId}'}</code>
                     </div>
-                    <p className="text-sm text-muted-foreground">Get long-term memories by type</p>
-                    <div className="bg-secondary/50 rounded-lg p-4">
-                      <pre className="text-xs overflow-x-auto">
-{`Query Parameters:
-  userId: string (required)
-  memoryType: string (optional, e.g., "user_preferences", "semantic", "summary", "episodic")
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`DELETE /api/services/${id}/events/{eventId}`);
+                        setCopiedEndpoint('delete-event');
+                        setTimeout(() => setCopiedEndpoint(null), 2000);
+                      }}
+                    >
+                      {copiedEndpoint === 'delete-event' ? (
+                        <Check className="h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Delete a specific event</p>
+                </div>
+              </div>
 
-Response:
+              {/* Memory Records (Long-Term Memory) */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                    <Brain className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">Memory Records (Long-Term Memory)</h3>
+                    <p className="text-sm text-muted-foreground">Store and retrieve extracted memories</p>
+                  </div>
+                </div>
+
+                {/* GET /records */}
+                <div className="glass-card p-5 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="px-2 py-1 bg-primary/20 text-primary rounded text-xs font-mono font-semibold">
+                        GET
+                      </div>
+                      <code className="text-sm">/api/services/{id}/records</code>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`GET /api/services/${id}/records?userId=user-123&memoryType=user_preferences`);
+                        setCopiedEndpoint('get-records');
+                        setTimeout(() => setCopiedEndpoint(null), 2000);
+                      }}
+                    >
+                      {copiedEndpoint === 'get-records' ? (
+                        <Check className="h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">List memory records by user and type</p>
+                  <div className="bg-secondary/50 rounded-lg p-4">
+                    <pre className="text-xs overflow-x-auto">
+{`// Query Parameters
+userId: string (required)
+memoryType: string (optional)  // user_preferences | semantic | summary | episodic
+
+// Response
 {
-  "memories": [
+  "records": [
     {
-      "memoryRecordId": "mem-abc123...",
+      "memoryRecordId": "mem-xyz789...",
       "memoryType": "user_preferences",
-      "userId": "123",
+      "userId": "user-123",
       "content": { "text": "prefers window seats" },
       "createdAt": "2024-01-07T12:00:00Z",
       "metadata": {}
     }
   ]
 }`}
-                      </pre>
-                    </div>
+                    </pre>
                   </div>
+                </div>
+
+                {/* POST /records/retrieve */}
+                <div className="glass-card p-5 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="px-2 py-1 bg-success/20 text-success rounded text-xs font-mono font-semibold">
+                        POST
+                      </div>
+                      <code className="text-sm">/api/services/{id}/records/retrieve</code>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`POST /api/services/${id}/records/retrieve`);
+                        setCopiedEndpoint('retrieve-records');
+                        setTimeout(() => setCopiedEndpoint(null), 2000);
+                      }}
+                    >
+                      {copiedEndpoint === 'retrieve-records' ? (
+                        <Check className="h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Semantic search for relevant memories</p>
+                  <div className="bg-secondary/50 rounded-lg p-4">
+                    <pre className="text-xs overflow-x-auto">
+{`// Request Body
+{
+  "userId": "user-123",
+  "query": "What are the user's food preferences?",
+  "memoryType": "user_preferences",  // Optional
+  "maxResults": 10                   // Optional
+}
+
+// Response
+{
+  "records": [
+    {
+      "memoryRecordId": "mem-xyz789...",
+      "memoryType": "user_preferences",
+      "userId": "user-123",
+      "content": { "text": "prefers Italian food" },
+      "createdAt": "2024-01-07T12:00:00Z",
+      "relevanceScore": 0.95
+    }
+  ]
+}`}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* DELETE /records/{recordId} */}
+                <div className="glass-card p-5 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="px-2 py-1 bg-destructive/20 text-destructive rounded text-xs font-mono font-semibold">
+                        DELETE
+                      </div>
+                      <code className="text-sm">/api/services/{id}/records/{'{recordId}'}</code>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`DELETE /api/services/${id}/records/{recordId}`);
+                        setCopiedEndpoint('delete-record');
+                        setTimeout(() => setCopiedEndpoint(null), 2000);
+                      }}
+                    >
+                      {copiedEndpoint === 'delete-record' ? (
+                        <Check className="h-4 w-4 text-success" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Delete a specific memory record</p>
                 </div>
               </div>
 
-              {/* STEP 3: Automatic Processing */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center font-bold text-warning">
-                    3
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">Automatic Processing</h3>
-                    <p className="text-sm text-muted-foreground">Redis → Long-Term Memory</p>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground ml-13">
-                  Redis automatically processes short-term conversations and creates long-term memories. No action needed from your agent.
-                </p>
-
-                <div className="bg-warning/5 border border-warning/20 rounded-lg p-5 ml-13">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
-                    <div className="text-sm space-y-3">
-                      <div>
-                        <p className="font-medium text-warning mb-1">How Redis Processes Memories</p>
-                        <p className="text-muted-foreground">
-                          Redis runs in the background, analyzing short-term conversations and automatically managing long-term memory buckets.
-                        </p>
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground mb-1">What Redis Does:</p>
-                        <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                          <li>Reads short-term conversation data</li>
-                          <li>Applies your agent's purpose and goals</li>
-                          <li>Uses memory bucket schemas and examples</li>
-                          <li>Automatically stores, updates, or deletes long-term memories</li>
-                        </ul>
-                      </div>
-                      <p className="text-muted-foreground">
-                        <strong className="text-foreground">No API calls needed</strong> - This happens automatically based on your configuration.
-                      </p>
-                    </div>
+              {/* Automatic Extraction Note */}
+              <div className="bg-warning/5 border border-warning/20 rounded-lg p-5">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+                  <div className="text-sm space-y-2">
+                    <p className="font-medium text-warning">Automatic Memory Extraction</p>
+                    <p className="text-muted-foreground">
+                      Long-term memories are automatically extracted from events. You don't need to create them manually.
+                      The system analyzes conversations and creates memory records for each type:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li><strong>user_preferences</strong> - Preferences and choices</li>
+                      <li><strong>semantic</strong> - Facts and knowledge</li>
+                      <li><strong>summary</strong> - Session summaries</li>
+                      <li><strong>episodic</strong> - Structured episodes</li>
+                    </ul>
                   </div>
                 </div>
               </div>
