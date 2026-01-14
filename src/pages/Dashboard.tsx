@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, LayoutGrid, List, Settings, Database, Plane } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, Settings, Database, Plane, Lock, Sparkles, ChevronDown } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Service {
   id: string;
@@ -102,10 +109,41 @@ const Dashboard = () => {
             {/* Memory Services Tab */}
             <TabsContent value="services" className="space-y-6 animate-fade-in">
               <div className="flex justify-end">
-                <Button variant="hero" onClick={() => navigate("/create-service")} className="gap-2">
-                  <Plus className="h-5 w-5" />
-                  New Service
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="hero" className="gap-2">
+                      <Plus className="h-5 w-5" />
+                      New Service
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-72">
+                    <DropdownMenuItem
+                      onClick={() => navigate("/create-service-fixed")}
+                      className="flex items-start gap-3 p-3 cursor-pointer"
+                    >
+                      <Lock className="h-5 w-5 text-blue-500 mt-0.5" />
+                      <div>
+                        <div className="font-semibold">Fixed Schema</div>
+                        <div className="text-xs text-muted-foreground">
+                          AWS-style: Facts, Preferences, Summary
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate("/create-service")}
+                      className="flex items-start gap-3 p-3 cursor-pointer"
+                    >
+                      <Sparkles className="h-5 w-5 text-purple-500 mt-0.5" />
+                      <div>
+                        <div className="font-semibold">Dynamic Schema</div>
+                        <div className="text-xs text-muted-foreground">
+                          Define your own custom memory buckets
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Search and Filters */}
@@ -145,9 +183,24 @@ const Dashboard = () => {
                   <p className="text-muted-foreground mb-6">
                     Create your first memory service to get started
                   </p>
-                  <Button variant="hero" onClick={() => navigate("/create-service")}>
-                    Create Service
-                  </Button>
+                  <div className="flex gap-4 justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/create-service-fixed")}
+                      className="gap-2"
+                    >
+                      <Lock className="h-4 w-4 text-blue-500" />
+                      Fixed Schema
+                    </Button>
+                    <Button
+                      variant="hero"
+                      onClick={() => navigate("/create-service")}
+                      className="gap-2"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Dynamic Schema
+                    </Button>
+                  </div>
                 </div>
               )}
             </TabsContent>
