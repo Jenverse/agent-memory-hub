@@ -1,6 +1,8 @@
 import { Database, MoreVertical, Activity, Settings, Clock, Brain, CheckCircle2, Code, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Link, useNavigate } from "react-router-dom";
+import { serviceAPI } from "@/lib/api-client";
+import { toast } from "@/components/ui/sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,16 +40,30 @@ const ServiceCard = ({ id, name, status, hasShortTerm, longTermBucketNames, last
     navigate(`/service/${id}?tab=api-integration`);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
-      // Remove from localStorage
-      const serviceIds = JSON.parse(localStorage.getItem("service_ids") || "[]");
-      const updatedIds = serviceIds.filter((sid: string) => sid !== id);
-      localStorage.setItem("service_ids", JSON.stringify(updatedIds));
-      localStorage.removeItem(`service_${id}`);
-      // Reload page to refresh the list
-      window.location.reload();
+      try {
+        // Delete from backend API
+        const response = await serviceAPI.delete(id);
+
+        if (response.success) {
+          // Also remove from localStorage
+          const serviceIds = JSON.parse(localStorage.getItem("service_ids") || "[]");
+          const updatedIds = serviceIds.filter((sid: string) => sid !== id);
+          localStorage.setItem("service_ids", JSON.stringify(updatedIds));
+          localStorage.removeItem(`service_${id}`);
+
+          toast.success(`Service "${name}" deleted successfully`);
+          // Reload page to refresh the list
+          window.location.reload();
+        } else {
+          toast.error(`Failed to delete service: ${response.error}`);
+        }
+      } catch (error) {
+        console.error("Error deleting service:", error);
+        toast.error("Failed to delete service");
+      }
     }
   };
 

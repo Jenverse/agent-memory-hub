@@ -1,23 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Database, Save, Plus, Clock, Brain, AlertCircle, Sparkles, Code, Copy, Check, User, Plane, ShoppingBag, Calendar, Loader2 } from "lucide-react";
+import { ArrowLeft, Database, Save, Clock, Brain, AlertCircle, Code, Copy, Check, Loader2 } from "lucide-react";
 import { serviceAPI } from "@/lib/api-client";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import SchemaBuilder from "@/components/SchemaBuilder";
-import MemoryBucketCard from "@/components/MemoryBucketCard";
-import AgentContextBuilder from "@/components/AgentContextBuilder";
 
 interface SchemaField {
   id: string;
@@ -33,50 +20,20 @@ interface MemoryBucket {
   schema: SchemaField[];
 }
 
-interface ExampleMemory {
-  id: string;
-  userMessage: string;
-  extractedMemory: string;
-  memoryType: "preference" | "fact" | "custom";
-  action: "store" | "update" | "delete";
-}
-
-interface AgentContextData {
-  purpose: string;
-  goals: string[];
-  exampleMemories: ExampleMemory[];
-}
-
 const ServiceConfig = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const [copiedEndpoint, setCopiedEndpoint] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "agent-details");
-  const [showSchemaRecommendationDialog, setShowSchemaRecommendationDialog] = useState(false);
-  const [agentDetailsChanged, setAgentDetailsChanged] = useState(false);
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "short-term");
   const [serviceName, setServiceName] = useState<string>("Loading...");
-  const [redisUrl, setRedisUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Short-term memory schema
   const [shortTermFields, setShortTermFields] = useState<SchemaField[]>([]);
 
-  // Long-term: User Preferences schema
-  const [preferencesFields, setPreferencesFields] = useState<SchemaField[]>([]);
-
-  // Long-term: Facts schema
-  const [factsFields, setFactsFields] = useState<SchemaField[]>([]);
-
-  // Custom memory buckets
+  // Memory buckets (long-term)
   const [customBuckets, setCustomBuckets] = useState<MemoryBucket[]>([]);
-
-  // Agent context for extraction guidance
-  const [agentContext, setAgentContext] = useState<AgentContextData>({
-    purpose: "",
-    goals: [],
-    exampleMemories: [],
-  });
 
   // Load service config from backend API
   useEffect(() => {
@@ -96,16 +53,8 @@ const ServiceConfig = () => {
         if (response.success && response.data) {
           const data = response.data;
 
-          // Set service name and Redis URL
+          // Set service name
           setServiceName(data.name || "Unnamed Service");
-          setRedisUrl(data.redisUrl || "");
-
-          // Set agent context
-          setAgentContext({
-            purpose: data.agentPurpose || "",
-            goals: data.memoryGoals || [],
-            exampleMemories: [],
-          });
 
           // Set short-term fields
           if (data.schemas?.shortTermFields) {
@@ -132,58 +81,6 @@ const ServiceConfig = () => {
 
     loadServiceConfig();
   }, [id]);
-
-  const addCustomBucket = () => {
-    const newBucket: MemoryBucket = {
-      id: `bucket-${Date.now()}`,
-      name: "",
-      description: "",
-      schema: [],
-    };
-    setCustomBuckets([...customBuckets, newBucket]);
-  };
-
-  const updateBucket = (bucket: MemoryBucket) => {
-    setCustomBuckets(customBuckets.map(b => b.id === bucket.id ? bucket : b));
-  };
-
-  const deleteBucket = (id: string) => {
-    setCustomBuckets(customBuckets.filter(b => b.id !== id));
-  };
-
-  const handleAgentContextChange = (data: AgentContextData) => {
-    setAgentContext(data);
-    setAgentDetailsChanged(true);
-  };
-
-  const handleSaveAgentDetails = () => {
-    // Save to localStorage
-    if (id) {
-      const savedData = localStorage.getItem(`service_${id}`);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        data.name = serviceName;
-        data.redisUrl = redisUrl;
-        data.agentPurpose = agentContext.purpose;
-        data.memoryGoals = agentContext.goals;
-        data.exampleMemories = agentContext.exampleMemories;
-        localStorage.setItem(`service_${id}`, JSON.stringify(data));
-      }
-    }
-
-    // Show recommendation dialog if details changed
-    if (agentDetailsChanged) {
-      setShowSchemaRecommendationDialog(true);
-      setAgentDetailsChanged(false);
-    }
-  };
-
-  const handleRegenerateSchemas = () => {
-    // TODO: Implement schema regeneration based on updated agent details
-    // This would call the AI to regenerate schemas
-    setShowSchemaRecommendationDialog(false);
-    alert("Schema regeneration will be implemented soon!");
-  };
 
   // Show loading state
   if (isLoading) {
@@ -263,10 +160,6 @@ const ServiceConfig = () => {
           {/* Configuration Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="glass-card p-1 w-full justify-start overflow-x-auto">
-              <TabsTrigger value="agent-details" className="gap-2 data-[state=active]:bg-primary/20">
-                <User className="h-4 w-4" />
-                Agent Details
-              </TabsTrigger>
               <TabsTrigger value="short-term" className="gap-2 data-[state=active]:bg-primary/20">
                 <Clock className="h-4 w-4" />
                 Short-Term Memory
@@ -281,100 +174,6 @@ const ServiceConfig = () => {
               </TabsTrigger>
             </TabsList>
 
-            {/* Agent Details Tab */}
-            <TabsContent value="agent-details" className="space-y-6 animate-fade-in">
-              {/* Service Configuration */}
-              <div className="glass-card rounded-xl p-6 space-y-4">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Database className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-lg mb-1">Service Configuration</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Basic service settings including name and Redis connection
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Service ID</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={id || ''}
-                        readOnly
-                        className="flex-1 px-3 py-2 bg-secondary/30 border border-border/50 rounded-lg font-mono text-sm text-muted-foreground cursor-not-allowed"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(id || '');
-                          setCopiedEndpoint('service-id');
-                          setTimeout(() => setCopiedEndpoint(null), 2000);
-                        }}
-                      >
-                        {copiedEndpoint === 'service-id' ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      This is your unique service ID (auto-generated, cannot be changed)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Service Name</label>
-                    <input
-                      type="text"
-                      value={serviceName}
-                      onChange={(e) => setServiceName(e.target.value)}
-                      className="w-full px-3 py-2 bg-secondary/50 border border-border/50 rounded-lg focus:border-primary focus:outline-none"
-                      placeholder="my-agent-memory"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Display name for your memory service (editable)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Redis URL</label>
-                    <input
-                      type="text"
-                      value={redisUrl}
-                      onChange={(e) => setRedisUrl(e.target.value)}
-                      className="w-full px-3 py-2 bg-secondary/50 border border-border/50 rounded-lg focus:border-primary focus:outline-none font-mono text-sm"
-                      placeholder="redis://default:password@host:port"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Redis connection URL (required for memory storage)
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <AgentContextBuilder
-                data={agentContext}
-                onChange={handleAgentContextChange}
-              />
-
-              <div className="flex justify-end">
-                <Button
-                  variant="hero"
-                  className="gap-2"
-                  onClick={handleSaveAgentDetails}
-                >
-                  <Save className="h-5 w-5" />
-                  Save Agent Details
-                </Button>
-              </div>
-            </TabsContent>
-
             {/* Short-Term Memory Tab */}
             <TabsContent value="short-term" className="space-y-6 animate-fade-in">
               <div className="glass-card rounded-xl p-6">
@@ -385,28 +184,36 @@ const ServiceConfig = () => {
                   <div>
                     <h2 className="font-semibold text-lg mb-1">Short-Term Memory</h2>
                     <p className="text-sm text-muted-foreground">
-                      Temporary session-based memory that persists during active conversations. 
+                      Temporary session-based memory that persists during active conversations.
                       This data is typically cleared after session timeout.
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 flex items-start gap-3 mb-6">
-                  <AlertCircle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-start gap-3 mb-6">
+                  <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium text-warning">Default Schema Loaded</p>
+                    <p className="font-medium text-primary">AWS AgentCore Memory Schema</p>
                     <p className="text-muted-foreground">
-                      The default schema includes essential fields. Modify as needed for your use case.
+                      This service uses the fixed AWS-style schema. Schema cannot be modified.
                     </p>
                   </div>
                 </div>
 
-                <SchemaBuilder
-                  title="Session Schema"
-                  description="Define the structure of short-term memory data"
-                  fields={shortTermFields}
-                  onChange={setShortTermFields}
-                />
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-muted-foreground">Schema Fields (Read-only)</h3>
+                  <div className="bg-secondary/30 rounded-lg divide-y divide-border/30">
+                    {shortTermFields.map((field) => (
+                      <div key={field.id} className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <code className="text-sm font-mono bg-secondary px-2 py-1 rounded">{field.name}</code>
+                          <span className="text-xs text-muted-foreground px-2 py-0.5 bg-secondary/50 rounded">{field.type}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{(field as any).description || ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </TabsContent>
 
@@ -418,34 +225,49 @@ const ServiceConfig = () => {
                   <div>
                     <h4 className="font-semibold mb-1">Persistent User Data</h4>
                     <p className="text-sm text-muted-foreground">
-                      Categorized storage that survives across sessions. Organize memories into buckets like Profile, Preferences, and Facts.
+                      AWS AgentCore Memory extraction types: semantic, episodic, and procedural memories.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">Your Memory Buckets</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Create custom buckets for your agent's specific needs
-                    </p>
-                  </div>
-                  <Button variant="outline" onClick={addCustomBucket} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Bucket
-                  </Button>
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium text-primary">Fixed Memory Buckets</p>
+                  <p className="text-muted-foreground">
+                    This service uses the AWS AgentCore memory structure. Buckets cannot be modified.
+                  </p>
                 </div>
+              </div>
 
-                {customBuckets.map((bucket) => (
-                  <MemoryBucketCard
-                    key={bucket.id}
-                    bucket={bucket}
-                    onUpdate={updateBucket}
-                    onDelete={deleteBucket}
-                  />
-                ))}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Memory Buckets (Read-only)</h3>
+                <div className="grid gap-4">
+                  {customBuckets.map((bucket) => (
+                    <div key={bucket.id} className="bg-secondary/30 rounded-xl p-5 border border-border/30">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="text-2xl">
+                          {bucket.name === 'semantic' ? '🧠' : bucket.name === 'episodic' ? '📅' : '📋'}
+                        </span>
+                        <div>
+                          <h4 className="font-semibold capitalize">{bucket.name}</h4>
+                          <p className="text-sm text-muted-foreground">{bucket.description}</p>
+                        </div>
+                      </div>
+                      <div className="bg-secondary/50 rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground mb-2">Schema Fields:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {bucket.schema.map((field) => (
+                            <span key={field.id} className="text-xs font-mono bg-secondary px-2 py-1 rounded">
+                              {field.name}: {field.type}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </TabsContent>
 
@@ -689,27 +511,6 @@ Response:
           </Tabs>
         </div>
       </main>
-
-      {/* Schema Recommendation Dialog */}
-      <AlertDialog open={showSchemaRecommendationDialog} onOpenChange={setShowSchemaRecommendationDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Update Memory Schemas?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              You've updated your agent details. Would you like us to recommend changes to your memory schemas based on the new agent purpose and goals?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>No, Keep Current Schemas</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRegenerateSchemas} className="bg-primary hover:bg-primary/90">
-              Yes, Recommend Changes
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

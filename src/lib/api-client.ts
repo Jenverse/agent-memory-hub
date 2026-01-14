@@ -54,6 +54,12 @@ export const serviceAPI = {
     });
   },
 
+  delete: async (id: string) => {
+    return fetchAPI<{ deleted: string }>(`/services/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
   list: async () => {
     return fetchAPI<ServiceConfig[]>('/services/list', {
       method: 'GET',

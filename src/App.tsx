@@ -5,8 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import CreateService from "./pages/CreateService";
-import CreateServiceFixed from "./pages/CreateServiceFixed";
+import CreateService from "./pages/CreateServiceFixed";
 import ServiceConfig from "./pages/ServiceConfig";
 import Demo from "./pages/Demo";
 import NotFound from "./pages/NotFound";
@@ -23,7 +22,6 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/create-service" element={<CreateService />} />
-          <Route path="/create-service-fixed" element={<CreateServiceFixed />} />
           <Route path="/service/:id" element={<ServiceConfig />} />
           <Route path="/demo" element={<Demo />} />
           <Route path="*" element={<NotFound />} />

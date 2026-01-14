@@ -81,6 +81,37 @@ export default async function handler(
     }
   }
 
+  // DELETE - Delete service config
+  if (req.method === 'DELETE') {
+    try {
+      const existing = await redis.get<ServiceConfig>(RedisKeys.serviceConfig(id));
+
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          error: `Service not found: ${id}`,
+        });
+      }
+
+      // Delete service config
+      await redis.del(RedisKeys.serviceConfig(id));
+
+      // Remove from services list
+      await redis.srem(RedisKeys.allServices(), id);
+
+      return res.status(200).json({
+        success: true,
+        data: { deleted: id },
+      });
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+      });
+    }
+  }
+
   // Method not allowed
   return res.status(405).json({
     success: false,

@@ -20,24 +20,25 @@ const FIXED_SHORT_TERM_SCHEMA = {
   ]
 };
 
+// AWS AgentCore Memory extraction types
 const FIXED_LONG_TERM_BUCKETS = [
   {
-    name: "facts",
-    icon: "📝",
-    description: "Knowledge and facts mentioned in conversations",
-    example: '"Works at Acme Corp", "Has 50 employees", "Located in Seattle"',
+    name: "semantic",
+    icon: "🧠",
+    description: "Facts, knowledge, and preferences extracted from conversations",
+    example: '"User works at Acme Corp", "Prefers Python over JavaScript", "Budget is $50k"',
   },
   {
-    name: "preferences", 
-    icon: "⚙️",
-    description: "User preferences, choices, and styles",
-    example: '"Prefers Python", "Likes detailed explanations", "Prefers dark mode"',
+    name: "episodic",
+    icon: "📅",
+    description: "Past events, experiences, and interactions the user has had",
+    example: '"Had a demo call last Tuesday", "Visited Paris in 2023", "Attended AWS re:Invent"',
   },
   {
-    name: "summary",
+    name: "procedural",
     icon: "📋",
-    description: "Running summary of each session",
-    example: '"Discussed enterprise pricing, requested a demo for next week"',
+    description: "How-to knowledge and processes learned during conversations",
+    example: '"Prefers 3-step explanations", "Likes code examples first", "Wants summary at end"',
   },
 ];
 
