@@ -70,7 +70,18 @@ export default async function handler(
     }
 
     // Store in service-specific Redis
-    const { session_id } = data;
+    // Handle both snake_case and camelCase field names
+    const session_id = data.session_id || data.sessionId;
+    const user_id = data.user_id || data.userId;
+    const timestamp = data.timestamp;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: session_id or sessionId',
+      });
+    }
+
     const messageKey = RedisKeys.sessionMessages(session_id);
     const metadataKey = RedisKeys.sessionMetadata(session_id);
 
@@ -82,9 +93,9 @@ export default async function handler(
 
     // Store/update session metadata
     await serviceRedis.hset(metadataKey, {
-      user_id: data.user_id,
+      user_id: user_id,
       service_id,
-      last_activity: data.timestamp,
+      last_activity: timestamp,
     });
     await serviceRedis.expire(metadataKey, 86400);
 
@@ -98,13 +109,13 @@ export default async function handler(
     console.log('[Extraction] Service type:', serviceConfig.serviceType, 'Memory types:', memoryTypes, 'Has OpenAI key:', !!process.env.OPENAI_API_KEY);
 
     if (memoryTypes.length > 0 && process.env.OPENAI_API_KEY) {
-      console.log('[Extraction] Triggering extraction for user:', data.user_id, 'session:', session_id);
+      console.log('[Extraction] Triggering extraction for user:', user_id, 'session:', session_id);
       triggerExtraction(
         serviceRedis,
         configRedis,
         serviceConfig,
         session_id,
-        data.user_id,
+        user_id,
         memoryTypes as MemoryType[]
       ).catch((err) => console.error('Background extraction error:', err));
     } else {
