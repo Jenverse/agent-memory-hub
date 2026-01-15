@@ -108,6 +108,10 @@ export class RedisWrapper {
   async smembers(key: string): Promise<string[]> {
     return await this.client.smembers(key);
   }
+
+  async srem(key: string, ...members: string[]): Promise<number> {
+    return await this.client.srem(key, ...members);
+  }
 }
 
 // Redis key patterns
