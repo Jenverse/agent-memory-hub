@@ -202,13 +202,13 @@ const ServiceConfig = () => {
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Service Name</label>
+                      <span className="text-sm font-medium text-muted-foreground">Service Name</span>
                       <div className="bg-secondary/50 rounded-lg px-4 py-3 font-mono text-sm">
                         {serviceName}
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Service ID</label>
+                      <span className="text-sm font-medium text-muted-foreground">Service ID</span>
                       <div className="bg-secondary/50 rounded-lg px-4 py-3 font-mono text-sm">
                         {id}
                       </div>
@@ -216,7 +216,7 @@ const ServiceConfig = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Redis URL</label>
+                    <span className="text-sm font-medium text-muted-foreground">Redis URL</span>
                     <div className="bg-secondary/50 rounded-lg px-4 py-3 font-mono text-sm break-all">
                       {redisUrl ? redisUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') : 'Not configured'}
                     </div>
@@ -224,13 +224,13 @@ const ServiceConfig = () => {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Service Type</label>
+                      <span className="text-sm font-medium text-muted-foreground">Service Type</span>
                       <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm capitalize">
                         {serviceType || 'fixed'}
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Created At</label>
+                      <span className="text-sm font-medium text-muted-foreground">Created At</span>
                       <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm">
                         {createdAt ? new Date(createdAt).toLocaleString() : 'Unknown'}
                       </div>
