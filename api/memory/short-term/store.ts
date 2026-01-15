@@ -19,8 +19,11 @@ export default async function handler(
   try {
     const { service_id, data } = req.body as StoreShortTermRequest;
 
+    console.log('[Store] Request received:', { service_id, data: JSON.stringify(data).substring(0, 200) });
+
     // Validate request
     if (!service_id || !data) {
+      console.log('[Store] Missing required fields');
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: service_id and data',
@@ -35,11 +38,14 @@ export default async function handler(
     );
 
     if (!serviceConfig) {
+      console.log('[Store] Service not found:', service_id);
       return res.status(404).json({
         success: false,
         error: `Service not found: ${service_id}`,
       });
     }
+
+    console.log('[Store] Found service:', serviceConfig.name, 'Schema fields:', serviceConfig.schemas?.shortTermFields?.map(f => f.name));
 
     // Validate data against short-term schema
     const validation = validateAgainstSchema(
@@ -48,6 +54,7 @@ export default async function handler(
     );
 
     if (!validation.valid) {
+      console.log('[Store] Validation failed:', validation.errors);
       return res.status(400).json(createValidationErrorResponse(validation.errors));
     }
 
