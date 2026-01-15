@@ -465,65 +465,51 @@ Be conversational and warm, but also practical and informative.`;
           </div>
         </div>
 
-        {/* Service Selection */}
-        <div className="space-y-2 mb-4">
-          <Label htmlFor="service-select" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Memory Service
-          </Label>
-          <Select value={selectedServiceId} onValueChange={setSelectedServiceId} disabled={servicesLoading}>
-            <SelectTrigger className="bg-secondary/50 border-border/50">
-              <SelectValue placeholder={servicesLoading ? "Loading services..." : "Select a memory service"} />
-            </SelectTrigger>
-            <SelectContent>
-              {availableServices.map((service) => (
-                <SelectItem key={service.id} value={service.id}>
-                  {service.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {selectedService && (
-            <p className="text-xs text-muted-foreground">
-              {selectedService.agentPurpose}
-            </p>
-          )}
-        </div>
+        {/* Compact Controls Row */}
+        <div className="flex items-end gap-3">
+          {/* Service Selection */}
+          <div className="flex-1 min-w-0">
+            <Label htmlFor="service-select" className="text-xs text-muted-foreground mb-1 block">
+              Memory Service
+            </Label>
+            <Select value={selectedServiceId} onValueChange={setSelectedServiceId} disabled={servicesLoading}>
+              <SelectTrigger className="bg-secondary/50 border-border/50 h-9">
+                <SelectValue placeholder={servicesLoading ? "Loading..." : "Select service"} />
+              </SelectTrigger>
+              <SelectContent>
+                {availableServices.map((service) => (
+                  <SelectItem key={service.id} value={service.id}>
+                    {service.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* User ID Input */}
-        <div className="space-y-2">
-          <Label htmlFor="user-id" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            User ID
-          </Label>
-          <Input
-            id="user-id"
-            placeholder="Enter your user ID (e.g., user123)"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            className="bg-secondary/50 border-border/50 focus:border-primary"
-          />
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              This will be used to identify you in the conversation
-            </p>
-            {memoriesLoaded && userId && (
-              <p className="text-xs text-green-500 flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Memories loaded
-              </p>
-            )}
+          {/* User ID Input */}
+          <div className="flex-1 min-w-0">
+            <Label htmlFor="user-id" className="text-xs text-muted-foreground mb-1 block">
+              User ID {memoriesLoaded && <span className="text-green-500">●</span>}
+            </Label>
+            <Input
+              id="user-id"
+              placeholder="e.g., user123"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              className="bg-secondary/50 border-border/50 h-9"
+            />
           </div>
 
           {/* View Memory Button */}
           <Button
             onClick={handleViewMemory}
             variant="outline"
-            className="w-full mt-2"
+            size="sm"
+            className="h-9 px-3"
             disabled={!userId || !selectedServiceId}
           >
-            <Eye className="h-4 w-4 mr-2" />
-            View Stored Memory
+            <Eye className="h-4 w-4 mr-1" />
+            View Memory
           </Button>
         </div>
       </div>

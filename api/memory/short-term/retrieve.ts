@@ -68,13 +68,6 @@ export default async function handler(
     // Get session metadata from service-specific Redis
     const metadata = await serviceRedis.hgetall(RedisKeys.sessionMetadata(session_id));
 
-    if (!metadata || Object.keys(metadata).length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: `Session not found: ${session_id}`,
-      });
-    }
-
     // Get messages from service-specific Redis
     const messageKey = RedisKeys.sessionMessages(session_id);
     const maxMessages = limit ? parseInt(limit as string, 10) : -1;
@@ -85,13 +78,14 @@ export default async function handler(
       maxMessages === -1 ? -1 : maxMessages - 1
     );
 
+    // Return empty result if no session/messages found (not an error)
     return res.status(200).json({
       success: true,
       data: {
         session_id,
-        user_id: metadata.user_id,
-        service_id: metadata.service_id,
-        last_activity: metadata.last_activity,
+        user_id: metadata?.user_id || null,
+        service_id: metadata?.service_id || service_id,
+        last_activity: metadata?.last_activity || null,
         messages: messages || [],
         message_count: messages?.length || 0,
       },

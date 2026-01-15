@@ -82,8 +82,12 @@ export default async function handler(
     await serviceRedis.expire(metadataKey, 86400);
 
     // Trigger memory extraction (async, don't block response)
-    // Only extract if service has memoryTypes configured
-    const memoryTypes = serviceConfig.memoryTypes || [];
+    // For fixed services, default to all 4 memory types if not set
+    const defaultMemoryTypes: MemoryType[] = ['user_preferences', 'semantic', 'summary', 'episodic'];
+    const memoryTypes = serviceConfig.memoryTypes?.length > 0
+      ? serviceConfig.memoryTypes
+      : (serviceConfig.serviceType === 'fixed' ? defaultMemoryTypes : []);
+
     if (memoryTypes.length > 0 && process.env.OPENAI_API_KEY) {
       triggerExtraction(
         serviceRedis,
