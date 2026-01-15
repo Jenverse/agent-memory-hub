@@ -80,8 +80,7 @@ const CreateServiceFixed = () => {
       name: serviceName,
       redisUrl,
       serviceType: "fixed", // Mark as fixed type
-      agentPurpose: "Fixed schema memory service (AWS AgentCore Memory style)",
-      memoryGoals: ["User preferences extraction", "Facts extraction", "Session summaries", "Episodic memory"],
+      memoryTypes: selectedMemoryTypes as any, // Which memory types are enabled
       schemas: {
         shortTermFields: FIXED_SHORT_TERM_SCHEMA.fields.map((f, i) => ({
           id: `st-${i}`,

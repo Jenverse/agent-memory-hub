@@ -23,8 +23,7 @@ export interface ServiceConfig {
   name: string;
   redisUrl?: string;  // Redis connection URL (e.g., redis://user:password@host:port)
   serviceType?: 'fixed' | 'custom';  // 'fixed' for AWS-style fixed schema, 'custom' for user-defined
-  agentPurpose: string;
-  memoryGoals: string[];
+  memoryTypes: MemoryType[];  // Which memory types are enabled for this service
   schemas: {
     shortTermFields: SchemaField[];
     longTermBuckets: LongTermBucket[];

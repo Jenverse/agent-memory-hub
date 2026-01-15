@@ -121,6 +121,8 @@ export const RedisKeys = {
   sessionMetadata: (sessionId: string) => `session:${sessionId}:metadata`,
   userBucket: (userId: string, serviceId: string, bucketName: string) =>
     `user:${userId}:service:${serviceId}:bucket:${bucketName}`,
+  longTermMemory: (userId: string, memoryType: string) =>
+    `user:${userId}:memory:${memoryType}`,
   allServices: () => 'services:all',
 };
 
