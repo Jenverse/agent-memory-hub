@@ -80,7 +80,7 @@ const CreateServiceFixed = () => {
       name: serviceName,
       redisUrl,
       serviceType: "fixed", // Mark as fixed type
-      memoryTypes: selectedMemoryTypes as any, // Which memory types are enabled
+      memoryTypes: ['user_preferences', 'semantic', 'summary', 'episodic'], // All 4 memory types enabled
       schemas: {
         shortTermFields: FIXED_SHORT_TERM_SCHEMA.fields.map((f, i) => ({
           id: `st-${i}`,
