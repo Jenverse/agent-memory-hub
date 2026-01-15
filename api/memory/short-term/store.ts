@@ -108,8 +108,9 @@ export default async function handler(
 
     console.log('[Extraction] Service type:', serviceConfig.serviceType, 'Memory types:', memoryTypes, 'Has OpenAI key:', !!process.env.OPENAI_API_KEY);
 
-    if (memoryTypes.length > 0 && process.env.OPENAI_API_KEY) {
+    if (memoryTypes.length > 0 && process.env.OPENAI_API_KEY && user_id) {
       console.log('[Extraction] Triggering extraction for user:', user_id, 'session:', session_id);
+      // Don't await - run in background but log errors
       triggerExtraction(
         serviceRedis,
         configRedis,
@@ -117,9 +118,13 @@ export default async function handler(
         session_id,
         user_id,
         memoryTypes as MemoryType[]
-      ).catch((err) => console.error('Background extraction error:', err));
+      ).then(() => {
+        console.log('[Extraction] Completed successfully for session:', session_id);
+      }).catch((err) => {
+        console.error('[Extraction] Background extraction error:', err);
+      });
     } else {
-      console.log('[Extraction] Skipping - no memory types or no OpenAI key');
+      console.log('[Extraction] Skipping - memoryTypes:', memoryTypes.length, 'OpenAI:', !!process.env.OPENAI_API_KEY, 'userId:', user_id);
     }
 
     return res.status(200).json({
