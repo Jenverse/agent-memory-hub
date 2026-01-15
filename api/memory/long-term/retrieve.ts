@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getRedisClient, getServiceRedisClient, RedisKeys } from '../../../lib/redis.js';
-import type { LongTermMemory, ServiceConfig, ApiResponse } from '../../../lib/types.js';
+import type { LongTermMemoryRecord, ServiceConfig, ApiResponse, MemoryType } from '../../../lib/types.js';
+
+const ALL_MEMORY_TYPES: MemoryType[] = ['user_preferences', 'semantic', 'summary', 'episodic'];
 
 export default async function handler(
   req: VercelRequest,
@@ -15,7 +17,7 @@ export default async function handler(
   }
 
   try {
-    const { user_id, service_id, bucket_name } = req.query;
+    const { user_id, service_id, memory_type } = req.query;
 
     if (!user_id || typeof user_id !== 'string') {
       return res.status(400).json({
@@ -56,20 +58,18 @@ export default async function handler(
       });
     }
 
-    const memories: Record<string, any> = {};
+    const memories: Record<string, LongTermMemoryRecord[]> = {};
 
-    // If bucket_name is specified, get only that bucket
-    if (bucket_name && typeof bucket_name === 'string') {
-      const bucketKey = RedisKeys.userBucket(user_id, service_id, bucket_name);
-      const bucketData = await serviceRedis.lrange<LongTermMemory>(bucketKey, 0, -1);
-      memories[bucket_name] = bucketData || [];
-    } else {
-      // Get all buckets for this user and service
-      for (const bucket of serviceConfig.schemas.longTermBuckets) {
-        const bucketKey = RedisKeys.userBucket(user_id, service_id, bucket.name);
-        const bucketData = await serviceRedis.lrange<LongTermMemory>(bucketKey, 0, -1);
-        memories[bucket.name] = bucketData || [];
-      }
+    // Determine which memory types to retrieve
+    const memoryTypesToRetrieve = memory_type && typeof memory_type === 'string'
+      ? [memory_type as MemoryType]
+      : serviceConfig.memoryTypes || ALL_MEMORY_TYPES;
+
+    // Retrieve memories for each memory type
+    for (const memType of memoryTypesToRetrieve) {
+      const memoryKey = RedisKeys.longTermMemory(user_id, memType);
+      const memoryData = await serviceRedis.lrange<LongTermMemoryRecord>(memoryKey, 0, -1);
+      memories[memType] = memoryData || [];
     }
 
     return res.status(200).json({
