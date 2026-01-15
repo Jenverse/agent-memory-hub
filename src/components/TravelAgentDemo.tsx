@@ -350,25 +350,31 @@ Be conversational and warm, but also practical and informative.`;
         // Build data object based on schema fields
         const buildSchemaData = (userMsg: string, agentMsg: string | null) => {
           const data: Record<string, any> = {};
+          const eventId = `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
           for (const field of schema) {
             const fieldName = field.name.toLowerCase();
 
             // Map common field names to our data
-            if (fieldName === 'user_id' || fieldName === 'userid') {
+            if (fieldName === 'eventid' || fieldName === 'event_id') {
+              data[field.name] = eventId;
+            } else if (fieldName === 'user_id' || fieldName === 'userid') {
               data[field.name] = userId;
             } else if (fieldName === 'session_id' || fieldName === 'sessionid') {
               data[field.name] = sessionId;
             } else if (fieldName === 'timestamp' || fieldName === 'time' || fieldName === 'created_at') {
-              data[field.name] = timestamp;
+              // Check if field type is number (Unix timestamp) or string (ISO)
+              data[field.name] = field.type === 'number' ? Date.now() : timestamp;
             } else if (fieldName === 'role') {
-              data[field.name] = agentMsg ? "agent" : "user";
+              data[field.name] = agentMsg ? "ASSISTANT" : "USER";
             } else if (fieldName === 'text' || fieldName === 'message' || fieldName === 'content') {
               data[field.name] = agentMsg || userMsg;
             } else if (fieldName === 'user_message' || fieldName === 'usermessage') {
               data[field.name] = userMsg;
             } else if (fieldName === 'agent_response' || fieldName === 'agentresponse' || fieldName === 'assistant_message') {
               data[field.name] = agentMsg || "";
+            } else if (fieldName === 'metadata') {
+              data[field.name] = {};
             }
           }
 
