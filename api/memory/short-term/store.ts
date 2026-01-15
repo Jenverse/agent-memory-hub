@@ -88,7 +88,10 @@ export default async function handler(
       ? serviceConfig.memoryTypes
       : (serviceConfig.serviceType === 'fixed' ? defaultMemoryTypes : []);
 
+    console.log('[Extraction] Service type:', serviceConfig.serviceType, 'Memory types:', memoryTypes, 'Has OpenAI key:', !!process.env.OPENAI_API_KEY);
+
     if (memoryTypes.length > 0 && process.env.OPENAI_API_KEY) {
+      console.log('[Extraction] Triggering extraction for user:', data.user_id, 'session:', session_id);
       triggerExtraction(
         serviceRedis,
         configRedis,
@@ -97,6 +100,8 @@ export default async function handler(
         data.user_id,
         memoryTypes as MemoryType[]
       ).catch((err) => console.error('Background extraction error:', err));
+    } else {
+      console.log('[Extraction] Skipping - no memory types or no OpenAI key');
     }
 
     return res.status(200).json({
@@ -125,22 +130,31 @@ async function triggerExtraction(
   memoryTypes: MemoryType[]
 ) {
   try {
+    console.log('[Extraction] Starting extraction for session:', sessionId);
+
     // Get all messages from session
     const messageKey = RedisKeys.sessionMessages(sessionId);
     const messages = await serviceRedis.lrange(messageKey, 0, -1);
 
+    console.log('[Extraction] Found', messages?.length || 0, 'messages in session');
+
     if (!messages || messages.length === 0) {
+      console.log('[Extraction] No messages found, skipping');
       return;
     }
 
     // Extract memories from conversation
+    console.log('[Extraction] Calling extractMemoriesFromConversation...');
     const extractedMemories = await extractMemoriesFromConversation(
       messages,
       memoryTypes,
       userId
     );
 
+    console.log('[Extraction] Extracted', extractedMemories.length, 'memories');
+
     if (extractedMemories.length === 0) {
+      console.log('[Extraction] No memories extracted, skipping');
       return;
     }
 

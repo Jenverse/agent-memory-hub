@@ -24,8 +24,11 @@ const ServiceConfig = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const [copiedEndpoint, setCopiedEndpoint] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "short-term");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "details");
   const [serviceName, setServiceName] = useState<string>("Loading...");
+  const [redisUrl, setRedisUrl] = useState<string>("");
+  const [serviceType, setServiceType] = useState<string>("");
+  const [createdAt, setCreatedAt] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -53,8 +56,11 @@ const ServiceConfig = () => {
         if (response.success && response.data) {
           const data = response.data;
 
-          // Set service name
+          // Set service details
           setServiceName(data.name || "Unnamed Service");
+          setRedisUrl(data.redisUrl || "");
+          setServiceType(data.serviceType || "fixed");
+          setCreatedAt(data.createdAt || "");
 
           // Set short-term fields
           if (data.schemas?.shortTermFields) {
@@ -160,6 +166,10 @@ const ServiceConfig = () => {
           {/* Configuration Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="glass-card p-1 w-full justify-start overflow-x-auto">
+              <TabsTrigger value="details" className="gap-2 data-[state=active]:bg-primary/20">
+                <Database className="h-4 w-4" />
+                Details
+              </TabsTrigger>
               <TabsTrigger value="short-term" className="gap-2 data-[state=active]:bg-primary/20">
                 <Clock className="h-4 w-4" />
                 Short-Term Memory
@@ -173,6 +183,62 @@ const ServiceConfig = () => {
                 API Integration
               </TabsTrigger>
             </TabsList>
+
+            {/* Service Details Tab */}
+            <TabsContent value="details" className="space-y-6 animate-fade-in">
+              <div className="glass-card rounded-xl p-6">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Database className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-lg mb-1">Service Details</h2>
+                    <p className="text-sm text-muted-foreground">
+                      View your service configuration and connection details.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Service Name</label>
+                      <div className="bg-secondary/50 rounded-lg px-4 py-3 font-mono text-sm">
+                        {serviceName}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Service ID</label>
+                      <div className="bg-secondary/50 rounded-lg px-4 py-3 font-mono text-sm">
+                        {id}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Redis URL</label>
+                    <div className="bg-secondary/50 rounded-lg px-4 py-3 font-mono text-sm break-all">
+                      {redisUrl ? redisUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') : 'Not configured'}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Service Type</label>
+                      <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm capitalize">
+                        {serviceType || 'fixed'}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Created At</label>
+                      <div className="bg-secondary/50 rounded-lg px-4 py-3 text-sm">
+                        {createdAt ? new Date(createdAt).toLocaleString() : 'Unknown'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
 
             {/* Short-Term Memory Tab */}
             <TabsContent value="short-term" className="space-y-6 animate-fade-in">
